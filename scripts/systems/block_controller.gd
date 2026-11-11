@@ -5,8 +5,9 @@ signal blocks_changed(remaining: int)
 signal cluster_cleared(count: int)
 signal resolution_finished(payload: Dictionary)
 
-const CELL := 72.0
-const ORIGIN := Vector2(84, 170)
+const CELL := 64.0
+## Centered so column 4 lines up with cannon x=360.
+const ORIGIN := Vector2(104, 178)
 
 var block_scene: PackedScene
 var blocks_root: Node2D
@@ -143,8 +144,8 @@ func _run_chains(payload: Dictionary) -> void:
 								n.apply_hit(be.bloom_color, true)
 					be.begin_destroy("settle_chain")
 					payload["destroyed_count"] = int(payload["destroyed_count"]) + 1
-		AudioManager.play_chain()
-		await get_tree().create_timer(0.18).timeout
+		AudioManager.play_chain(depth)
+		await get_tree().create_timer(0.2).timeout
 		await _apply_gravity()
 	payload["remaining_blocks"] = remaining()
 	blocks_changed.emit(remaining())

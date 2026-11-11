@@ -6,38 +6,51 @@ Updated: 2026-11-11 (America/Sao_Paulo)
 
 Commercial casual 2D Android game in Godot 4: color-match projectile puzzle that reveals art and rebuilds a collectible world. Inspired by Jelly Busters–style interaction only (original IP).
 
-## Repo / tooling
+## Repo
 
-| Item | Status |
-|---|---|
-| Godot | **4.7.2.stable** on Windows worker (winget) |
-| GitHub | https://github.com/PakalTheGreat/PuzzleBloom (`main`) |
-| Godot MCP | Addon enabled in project for editor automation |
-| Android export | Later (Etapa E) |
+https://github.com/PakalTheGreat/PuzzleBloom (`main`)
 
-## Implementation status
+## Etapa A — 200% juice / identity pass (shipped)
 
-### Done — Etapa A (playable polished core)
+### Feel
+- Elastic multi-bounce aim ribbon + soft same-color aim assist (never hard lock)
+- Weighty projectile launch (scale punch + speed ramp)
+- JuiceDirector: screen shake, camera punch, hitstop on combos
+- Combo banners, score-star flies to HUD
+- Progressive garden illustration reveal under blocks
 
-- Portrait 720×1280 Godot 4 project
-- Systems: GameManager, LevelManager, ProjectileController, BlockController, CollisionSystem, ScoreSystem, UIManager, AudioManager, SaveSystem stub
-- Level **Dawn Petals**: drag-aim + shoot, color match clear, gravity chains, durable (3 HP), AoE bloom, particles, score/combo HUD, win/lose overlay
-- Original garden visual identity (procedural volumetric petals — not Jelly Busters IP)
-- Headless import + editor playtest (shot consumed petals 20→19, 0 runtime errors after timeout fix)
+### Visual identity
+- Custom `bloom_block.gdshader` volumetric bevel/specular
+- Distinct silhouettes: rounded common, hex durable, star-bloom AoE + aura particles
+- Polished portrait HUD (shadowed panels, gold primary CTA)
+- Celebratory win/lose veil + burst (not bare labels)
 
-### Not started
+### Audio
+- Musical SFX hierarchy: shoot / impact / miss thunk / match pop / chain pitch climb / AoE / win sting / lose
+- Soft procedural ambient bed loop
 
-- Etapa B: authored sprite/audio pack
-- Etapa C: map, stars, album, world rebuild
-- Etapa D: 20 levels, 3 envs, daily
-- Etapa E: Android export + QA
+### Demo level — Dawn Petals
+- Flower silhouette, open violet teaching lane into center AoE
+- Durable stem walls, mixed colors, 22 petals, goal 1,400
+- Designed for a satisfying first cascade in ~60–90s
 
-## How to run
+### Systems
+GameManager, LevelManager, ProjectileController, BlockController, CollisionSystem, ScoreSystem, JuiceDirector, RevealController, UIManager, AudioManager, SaveSystem stub
 
-1. Install Godot 4.7.x
-2. Import this folder → F5 (`scenes/main.tscn`)
-3. Drag to aim, release to shoot
+## How to re-run (debug)
 
-## Next action
+1. Open Godot **4.7.2** → Import `C:\Users\USUARIO\PuzzleBloom` (or clone the GitHub repo)
+2. Main scene `scenes/main.tscn` → **F5**
+3. Drag to aim (watch assist ring on same colors), release to shoot
+4. First tip: fire **violet** up the center lane into the glowing AoE bloom
 
-Etapa B polish pass (sprites/SFX pack), then progression stubs (C).
+## Not started
+
+- Etapa B authored sprite/audio pack
+- Etapa C progression map / album / world
+- Etapa D 20 levels
+- Etapa E Android export
+
+## Tooling note
+
+Godot MCP addon is included for editor automation. Cache screenshots are gitignored.

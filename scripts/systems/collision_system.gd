@@ -4,7 +4,7 @@ extends Node
 ## Resolves projectile ↔ block hits and flood-fill match groups.
 
 const MATCH_MIN := 2 ## projectile + 1 neighbor OR 2+ connected same color after settle
-const NEIGHBOR_DIST := 78.0
+const NEIGHBOR_DIST := 72.0
 
 func find_cluster(origin: BlockEntity, all_blocks: Array[BlockEntity]) -> Array[BlockEntity]:
 	var result: Array[BlockEntity] = []

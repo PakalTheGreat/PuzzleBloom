@@ -18,21 +18,26 @@ signal continue_pressed
 @onready var btn_ok: Button = %BtnOk
 @onready var toast: Label = %Toast
 @onready var top_bar: PanelContainer = %TopBar
+@onready var result_burst: Node2D = %ResultBurst
+@onready var veil: ColorRect = %Veil
 
 var _toast_tween: Tween
+var score_fly_target: Vector2 = Vector2(140, 70)
 
 func _ready() -> void:
 	result_panel.visible = false
+	veil.visible = false
 	combo_label.modulate.a = 0.0
 	btn_retry.pressed.connect(func() -> void: restart_pressed.emit())
 	btn_ok.pressed.connect(func() -> void: continue_pressed.emit())
-	_make_orb(current_orb, 22.0)
-	_make_orb(next_orb, 14.0)
+	_make_orb(current_orb, 26.0)
+	_make_orb(next_orb, 16.0)
 
 func bind_level(level: LevelData) -> void:
 	title_label.text = level.display_name
-	target_label.text = "Goal %s" % _format_score(level.target_score)
+	target_label.text = "Goal  %s" % _format_score(level.target_score)
 	result_panel.visible = false
+	veil.visible = false
 	set_score(0)
 	set_shots(level.shot_budget)
 	set_combo(0)
@@ -47,61 +52,94 @@ func set_shots(n: int) -> void:
 
 func set_combo(combo: int) -> void:
 	if combo >= 2:
-		combo_label.text = "Bloom x%s" % combo
-		combo_label.modulate.a = 1.0
-		var tw := create_tween()
-		tw.tween_property(combo_label, "scale", Vector2(1.15, 1.15), 0.08)
-		tw.tween_property(combo_label, "scale", Vector2.ONE, 0.12)
+		show_banner("BLOOM x%s" % combo, Color("ffe66d"))
 	else:
 		var tw := create_tween()
 		tw.tween_property(combo_label, "modulate:a", 0.0, 0.2)
+
+func show_banner(text: String, color: Color = Color("ffe66d")) -> void:
+	combo_label.text = text
+	combo_label.modulate = Color(color.r, color.g, color.b, 0.0)
+	combo_label.scale = Vector2(0.6, 0.6)
+	var tw := create_tween()
+	tw.tween_property(combo_label, "modulate:a", 1.0, 0.08)
+	tw.parallel().tween_property(combo_label, "scale", Vector2(1.2, 1.2), 0.12).set_trans(Tween.TRANS_BACK)
+	tw.tween_property(combo_label, "scale", Vector2.ONE, 0.1)
+	tw.tween_interval(0.55)
+	tw.tween_property(combo_label, "modulate:a", 0.0, 0.25)
 
 func set_ammo(current: BlockDefs.BloomColor, next: BlockDefs.BloomColor) -> void:
 	current_orb.color = BlockDefs.COLOR_HEX[current]
 	next_orb.color = BlockDefs.COLOR_HEX[next]
 
 func show_win(score: int, target: int) -> void:
+	veil.visible = true
+	veil.modulate.a = 0.0
 	result_panel.visible = true
-	result_title.text = "Garden Cleared"
+	result_title.text = "Garden Revealed"
 	var stars := 1
 	if score >= target:
 		stars = 2
-	if score >= int(target * 1.4):
+	if score >= int(float(target) * 1.35):
 		stars = 3
-	result_body.text = "Score %s\n%s" % [_format_score(score), "★".repeat(stars) + "☆".repeat(3 - stars)]
+	result_body.text = "Score  %s\n%s\nIllustration unlocked" % [
+		_format_score(score),
+		"★".repeat(stars) + "☆".repeat(3 - stars)
+	]
 	btn_ok.text = "Bloom Again"
-	_pop_result()
+	_pop_result(true)
+	_pulse_burst(Color("ffe66d"))
 
 func show_lose(score: int) -> void:
+	veil.visible = true
+	veil.modulate.a = 0.0
 	result_panel.visible = true
-	result_title.text = "Out of Petals"
-	result_body.text = "Score %s\nTry a new aim path." % _format_score(score)
-	btn_ok.text = "Retry"
-	_pop_result()
+	result_title.text = "Petals Spent"
+	result_body.text = "Score  %s\nThe garden waits.\nTry a new path." % _format_score(score)
+	btn_ok.text = "Try Again"
+	_pop_result(false)
+	_pulse_burst(Color("4ecdc4"))
 
 func show_toast(text: String) -> void:
 	toast.text = text
 	toast.modulate.a = 1.0
-	toast.scale = Vector2(0.9, 0.9)
+	toast.scale = Vector2(0.85, 0.85)
 	if _toast_tween and _toast_tween.is_running():
 		_toast_tween.kill()
 	_toast_tween = create_tween()
 	_toast_tween.tween_property(toast, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK)
-	_toast_tween.tween_interval(0.55)
+	_toast_tween.tween_interval(0.5)
 	_toast_tween.tween_property(toast, "modulate:a", 0.0, 0.25)
 
-func _pop_result() -> void:
-	result_panel.scale = Vector2(0.85, 0.85)
+func _pop_result(won: bool) -> void:
+	result_panel.scale = Vector2(0.7, 0.7)
 	result_panel.modulate.a = 0.0
 	var tw := create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(result_panel, "scale", Vector2.ONE, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(result_panel, "modulate:a", 1.0, 0.18)
+	tw.tween_property(veil, "modulate:a", 0.55, 0.2)
+	tw.tween_property(result_panel, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(result_panel, "modulate:a", 1.0, 0.2)
+	if won:
+		tw.chain().tween_property(result_panel, "rotation_degrees", 1.5, 0.08)
+		tw.tween_property(result_panel, "rotation_degrees", -1.0, 0.08)
+		tw.tween_property(result_panel, "rotation_degrees", 0.0, 0.08)
+
+func _pulse_burst(color: Color) -> void:
+	if result_burst == null:
+		return
+	result_burst.queue_redraw()
+	result_burst.set_meta("color", color)
+	result_burst.set_meta("life", 1.0)
+	var tw := create_tween()
+	tw.tween_method(func(v: float) -> void:
+		result_burst.set_meta("life", v)
+		result_burst.queue_redraw()
+	, 1.0, 0.0, 0.9)
 
 func _make_orb(poly: Polygon2D, radius: float) -> void:
 	var pts := PackedVector2Array()
-	for i in 14:
-		var a := TAU * float(i) / 14.0
+	for i in 16:
+		var a := TAU * float(i) / 16.0
 		pts.append(Vector2(cos(a), sin(a)) * radius)
 	poly.polygon = pts
 
