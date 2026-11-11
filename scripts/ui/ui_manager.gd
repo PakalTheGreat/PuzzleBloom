@@ -69,20 +69,27 @@ func show_banner(text: String, color: Color = Color("ffe66d")) -> void:
 	tw.tween_property(combo_label, "modulate:a", 0.0, 0.25)
 
 func set_ammo(current: BlockDefs.BloomColor, next: BlockDefs.BloomColor) -> void:
-	# Keep orb polygons as soft color chips in the dock.
-	current_orb.color = BlockDefs.COLOR_HEX[current]
-	next_orb.color = BlockDefs.COLOR_HEX[next]
-	# Prefer textured preview if Sprite2D siblings exist.
+	# CURRENT is the big world-space launcher; dock CurrentSprite mirrors it large.
+	# NEXT sits in a clear chip so the upcoming color is always obvious.
+	current_orb.visible = false
+	next_orb.visible = false
 	var cur_s := get_node_or_null("%CurrentSprite") as Sprite2D
 	var nxt_s := get_node_or_null("%NextSprite") as Sprite2D
+	var next_chip := get_node_or_null("%NextChip") as PanelContainer
+	var next_lbl := get_node_or_null("%NextLabel") as Label
 	if cur_s:
-		cur_s.texture = PetalAtlas.PETAL[current]
-		cur_s.scale = Vector2.ONE * (48.0 / maxf(cur_s.texture.get_size().x, 1.0))
-		current_orb.visible = false
+		cur_s.visible = false  # launcher petal is the current shot
 	if nxt_s:
 		nxt_s.texture = PetalAtlas.PETAL[next]
-		nxt_s.scale = Vector2.ONE * (34.0 / maxf(nxt_s.texture.get_size().x, 1.0))
-		next_orb.visible = false
+		nxt_s.scale = Vector2.ONE * (84.0 / maxf(nxt_s.texture.get_size().x, 1.0))
+		nxt_s.visible = true
+	if next_chip:
+		next_chip.visible = true
+	if next_lbl:
+		next_lbl.text = "NEXT"
+		next_lbl.visible = true
+	current_orb.color = BlockDefs.COLOR_HEX[current]
+	next_orb.color = BlockDefs.COLOR_HEX[next]
 
 func show_win(score: int, target: int) -> void:
 	veil.visible = true

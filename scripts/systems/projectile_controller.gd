@@ -5,7 +5,7 @@ signal shot_fired(color: BlockDefs.BloomColor)
 signal shot_resolved(payload: Dictionary)
 signal ammo_preview_changed(color: BlockDefs.BloomColor, next: BlockDefs.BloomColor)
 
-const CANNON_POS := Vector2(360, 1140)
+const CANNON_POS := Vector2(360, 1095)
 
 
 var projectile_scene: PackedScene

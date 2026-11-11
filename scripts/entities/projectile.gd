@@ -5,7 +5,7 @@ signal impacted(projectile: ProjectileEntity, block: BlockEntity)
 signal left_playfield(projectile: ProjectileEntity)
 
 const SPEED := 820.0
-const SIZE := 78.0
+const SIZE := 92.0
 
 var bloom_color: BlockDefs.BloomColor = BlockDefs.BloomColor.ROSE
 var direction: Vector2 = Vector2.UP

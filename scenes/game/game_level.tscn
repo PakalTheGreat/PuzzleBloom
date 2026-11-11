@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/game/game_level.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/entities/aim_line.gd" id="2"]
@@ -77,6 +77,24 @@ corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_next"]
+bg_color = Color(1, 0.97, 0.95, 0.94)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.72, 0.82, 0.85)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+shadow_color = Color(0.85, 0.45, 0.6, 0.28)
+shadow_size = 8
+
 [node name="GameLevel" type="Node2D"]
 script = ExtResource("1")
 
@@ -125,7 +143,7 @@ script = ExtResource("2")
 
 [node name="Cannon" type="Node2D" parent="World"]
 z_index = 8
-position = Vector2(360, 1140)
+position = Vector2(360, 1095)
 
 [node name="Glow" type="Sprite2D" parent="World/Cannon"]
 z_index = -1
@@ -252,44 +270,73 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -90.0
-offset_top = -150.0
-offset_right = 90.0
-offset_bottom = -40.0
+offset_left = -340.0
+offset_top = -210.0
+offset_right = 340.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 0
 
 [node name="CurrentOrb" type="Polygon2D" parent="UI/AmmoDock"]
 unique_name_in_owner = true
 visible = false
-position = Vector2(50, 70)
+position = Vector2(250, 110)
 color = Color(1, 0.42, 0.62, 1)
 
 [node name="NextOrb" type="Polygon2D" parent="UI/AmmoDock"]
 unique_name_in_owner = true
 visible = false
-position = Vector2(130, 78)
+position = Vector2(520, 100)
 color = Color(0.3, 0.8, 0.77, 1)
 
 [node name="CurrentSprite" type="Sprite2D" parent="UI/AmmoDock"]
 unique_name_in_owner = true
-position = Vector2(50, 58)
+visible = false
+position = Vector2(250, 100)
 centered = true
 
-[node name="NextSprite" type="Sprite2D" parent="UI/AmmoDock"]
+[node name="CurrentTag" type="Label" parent="UI/AmmoDock"]
 unique_name_in_owner = true
-position = Vector2(130, 66)
-centered = true
-
-[node name="AmmoHint" type="Label" parent="UI/AmmoDock"]
-offset_left = 100.0
-offset_top = 100.0
-offset_right = 160.0
-offset_bottom = 124.0
-theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.8, 0.9, 0.88, 0.8)
-text = "next"
+offset_left = 268.0
+offset_top = 8.0
+offset_right = 412.0
+offset_bottom = 36.0
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.4, 0.22, 0.32, 1)
+theme_override_colors/font_outline_color = Color(1, 0.96, 0.94, 0.85)
+theme_override_constants/outline_size = 4
+text = "CURRENT"
 horizontal_alignment = 1
+
+[node name="NextChip" type="PanelContainer" parent="UI/AmmoDock"]
+unique_name_in_owner = true
+offset_left = 455.0
+offset_top = 18.0
+offset_right = 635.0
+offset_bottom = 188.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_next")
+
+[node name="NextVBox" type="VBoxContainer" parent="UI/AmmoDock/NextChip"]
+layout_mode = 2
+theme_override_constants/separation = 2
+alignment = 1
+
+[node name="NextLabel" type="Label" parent="UI/AmmoDock/NextChip/NextVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.45, 0.25, 0.35, 1)
+text = "NEXT"
+horizontal_alignment = 1
+
+[node name="NextSpriteHost" type="Control" parent="UI/AmmoDock/NextChip/NextVBox"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
+[node name="NextSprite" type="Sprite2D" parent="UI/AmmoDock/NextChip/NextVBox/NextSpriteHost"]
+unique_name_in_owner = true
+position = Vector2(90, 50)
+centered = true
 
 [node name="Hint" type="Label" parent="UI"]
 anchors_preset = 7
@@ -298,9 +345,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -260.0
-offset_top = -210.0
+offset_top = -248.0
 offset_right = 260.0
-offset_bottom = -170.0
+offset_bottom = -214.0
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.45, 0.3, 0.4, 0.85)
 text = "Drag to aim · release to bloom"

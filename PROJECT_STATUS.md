@@ -10,25 +10,22 @@ Commercial casual 2D Android game in Godot 4: color-match projectile puzzle. Ori
 
 https://github.com/PakalTheGreat/PuzzleBloom (`main`)
 
-## Latest: hard visual redesign (Petal Pals)
+## Latest: playtest polish (post “ficou muito melhor”)
 
-Response to Lucas “péssimo” feedback — not a polish nudge, a look swap.
+Lucas liked Petal Pals look; applied ASAP fixes:
 
-### Visual
-- Original pastel jelly-petal sprites (GenerateImage → transparent PNGs)
-- Soft garden dawn background art
-- Blocks = `Sprite2D` textures (not ColorRects); AnimationPlayer squash; GPUParticles
-- **Faces only** on current projectile/cannon + AoE hero (commons get a brief hit face, then hide)
-- Larger pieces (cell 88), tighter blossom layout, less empty void
-- Cream/pink portrait HUD StyleBoxes (not dark grey chrome)
+1. **Grey hatch gone** — leftover checker/mesh was baked into petal PNGs; flood-cleaned sprites + removed reveal mist panel. Garden shows clean under the cluster.
+2. **Debug window fits screen** — viewport stays 720×1280; window override **405×720** with `canvas_items` + `keep` so the full portrait (incl. launcher) fits a ~1080p / 125% DPI desktop.
+3. **CURRENT / NEXT clarity** — large launcher petal (148px) labeled CURRENT; NEXT chip StyleBox with bigger preview petal.
 
-### Feel (kept + tuned)
-- JuiceDirector shake/hitstop/punch, aim assist, reveal, audio bed
+### Visual (kept)
+- Petal Pals pastel jelly sprites, soft garden BG, faces only on CURRENT + AoE hero
+- StyleBoxes / AnimationPlayer / GPUParticles (not bare ColorRects)
 
 ### How to run
-Godot 4.7 → open repo → F5. Theme title: **Petal Pals**.
+Godot 4.7 → open repo → F5 (DEBUG window ~405×720). Theme title: **Petal Pals**.
 
 ## Etapa status
 
-- **A** playable + visual redesign: done (iterate on Lucas playtest)
+- **A** playable + visual redesign + hatch/window/ammo polish: iterating on Lucas playtest
 - **B–E**: not started

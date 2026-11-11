@@ -118,15 +118,17 @@ func _on_state(state: GameManager.GameState) -> void:
 func _on_ammo(cur: BlockDefs.BloomColor, nxt: BlockDefs.BloomColor) -> void:
 	ui.set_ammo(cur, nxt)
 	if cannon_body:
+		# CURRENT shot = large launcher petal at bottom (hero piece).
+		const CANNON_SIZE := 148.0
 		cannon_body.texture = PetalAtlas.PETAL[cur]
-		var s := 86.0 / maxf(cannon_body.texture.get_size().x, 1.0)
+		var s := CANNON_SIZE / maxf(cannon_body.texture.get_size().x, 1.0)
 		cannon_body.scale = Vector2.ONE * s
 		cannon_glow.texture = cannon_body.texture
-		cannon_glow.scale = Vector2.ONE * s * 1.35
-		cannon_glow.modulate = Color(1, 1, 1, 0.35)
+		cannon_glow.scale = Vector2.ONE * s * 1.4
+		cannon_glow.modulate = Color(1, 1, 1, 0.4)
 		cannon_face.texture = PetalAtlas.FACE_HAPPY
-		cannon_face.scale = Vector2.ONE * (86.0 * 0.55 / maxf(cannon_face.texture.get_size().x, 1.0))
-		cannon_face.position = Vector2(0, 6)
+		cannon_face.scale = Vector2.ONE * (CANNON_SIZE * 0.55 / maxf(cannon_face.texture.get_size().x, 1.0))
+		cannon_face.position = Vector2(0, 8)
 
 func _on_shot_fx(payload: Dictionary) -> void:
 	var destroyed := int(payload.get("destroyed_count", 0))
