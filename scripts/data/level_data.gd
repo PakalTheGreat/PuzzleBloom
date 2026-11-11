@@ -8,31 +8,26 @@ extends Resource
 @export var grid_cols: int = 7
 @export var grid_rows: int = 8
 @export var rng_seed: int = 42
-## Row-major cell codes: R/A/S/V/L + optional 2=durable, X=AoE, .=empty
 @export var layout: PackedStringArray = PackedStringArray()
 
 static func etapa_a_level() -> LevelData:
 	var data := LevelData.new()
 	data.level_id = "garden_01"
-	data.display_name = "Dawn Petals"
-	data.shot_budget = 22
-	data.target_score = 1400
-	data.grid_cols = 9
-	data.grid_rows = 11
+	data.display_name = "Petal Pals"
+	data.shot_budget = 20
+	data.target_score = 1200
+	data.grid_cols = 7
+	data.grid_rows = 8
 	data.rng_seed = 24011
-	# Blossom silhouette with OPEN violet lane into the AoE seed.
-	# Teach: shoot violet up the center → AoE detonates → cascade → peel durables.
+	# Tight cute blossom — larger pieces, less void, open violet lane into AoE hero.
 	data.layout = PackedStringArray([
-		".", ".", "R", "R", "S", "R", "R", ".", ".",
-		".", "A", "R", "S", "S", "S", "R", "A", ".",
-		".", "A", "A", "V", "VX", "V", "A", "A", ".",
-		"L", "V", "V", "V", "V", "V", "V", "V", "L",
-		"L", "R", "A", "S", "A", "S", "A", "R", "L",
-		".", "R", "R", "A", "A", "A", "R", "R", ".",
-		".", ".", "S2", "V", "V", "V", "S2", ".", ".",
-		".", ".", ".", "R2", ".", "R2", ".", ".", ".",
-		".", ".", ".", "V", "V", "V", ".", ".", ".",
-		".", ".", ".", ".", ".", ".", ".", ".", ".",
-		".", ".", ".", ".", ".", ".", ".", ".", ".",
+		".", "R", "R", "S", "R", "R", ".",
+		"A", "R", "S", "VX", "S", "R", "A",
+		"A", "V", "V", "V", "V", "V", "A",
+		"L", "A", "S", "A", "S", "A", "L",
+		".", "R", "A", "A", "A", "R", ".",
+		".", "S2", "V", "V", "V", "S2", ".",
+		".", ".", "R2", ".", "R2", ".", ".",
+		".", ".", ".", "V", ".", ".", ".",
 	])
 	return data

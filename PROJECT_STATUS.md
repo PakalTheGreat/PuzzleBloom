@@ -4,53 +4,31 @@ Updated: 2026-11-11 (America/Sao_Paulo)
 
 ## Goal
 
-Commercial casual 2D Android game in Godot 4: color-match projectile puzzle that reveals art and rebuilds a collectible world. Inspired by Jelly Busters–style interaction only (original IP).
+Commercial casual 2D Android game in Godot 4: color-match projectile puzzle. Original IP.
 
 ## Repo
 
 https://github.com/PakalTheGreat/PuzzleBloom (`main`)
 
-## Etapa A — 200% juice / identity pass (shipped)
+## Latest: hard visual redesign (Petal Pals)
 
-### Feel
-- Elastic multi-bounce aim ribbon + soft same-color aim assist (never hard lock)
-- Weighty projectile launch (scale punch + speed ramp)
-- JuiceDirector: screen shake, camera punch, hitstop on combos
-- Combo banners, score-star flies to HUD
-- Progressive garden illustration reveal under blocks
+Response to Lucas “péssimo” feedback — not a polish nudge, a look swap.
 
-### Visual identity
-- Custom `bloom_block.gdshader` volumetric bevel/specular
-- Distinct silhouettes: rounded common, hex durable, star-bloom AoE + aura particles
-- Polished portrait HUD (shadowed panels, gold primary CTA)
-- Celebratory win/lose veil + burst (not bare labels)
+### Visual
+- Original pastel jelly-petal sprites (GenerateImage → transparent PNGs)
+- Soft garden dawn background art
+- Blocks = `Sprite2D` textures (not ColorRects); AnimationPlayer squash; GPUParticles
+- **Faces only** on current projectile/cannon + AoE hero (commons get a brief hit face, then hide)
+- Larger pieces (cell 88), tighter blossom layout, less empty void
+- Cream/pink portrait HUD StyleBoxes (not dark grey chrome)
 
-### Audio
-- Musical SFX hierarchy: shoot / impact / miss thunk / match pop / chain pitch climb / AoE / win sting / lose
-- Soft procedural ambient bed loop
+### Feel (kept + tuned)
+- JuiceDirector shake/hitstop/punch, aim assist, reveal, audio bed
 
-### Demo level — Dawn Petals
-- Flower silhouette, open violet teaching lane into center AoE
-- Durable stem walls, mixed colors, 22 petals, goal 1,400
-- Designed for a satisfying first cascade in ~60–90s
+### How to run
+Godot 4.7 → open repo → F5. Theme title: **Petal Pals**.
 
-### Systems
-GameManager, LevelManager, ProjectileController, BlockController, CollisionSystem, ScoreSystem, JuiceDirector, RevealController, UIManager, AudioManager, SaveSystem stub
+## Etapa status
 
-## How to re-run (debug)
-
-1. Open Godot **4.7.2** → Import `C:\Users\USUARIO\PuzzleBloom` (or clone the GitHub repo)
-2. Main scene `scenes/main.tscn` → **F5**
-3. Drag to aim (watch assist ring on same colors), release to shoot
-4. First tip: fire **violet** up the center lane into the glowing AoE bloom
-
-## Not started
-
-- Etapa B authored sprite/audio pack
-- Etapa C progression map / album / world
-- Etapa D 20 levels
-- Etapa E Android export
-
-## Tooling note
-
-Godot MCP addon is included for editor automation. Cache screenshots are gitignored.
+- **A** playable + visual redesign: done (iterate on Lucas playtest)
+- **B–E**: not started

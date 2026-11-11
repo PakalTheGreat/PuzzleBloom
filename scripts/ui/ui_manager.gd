@@ -69,8 +69,20 @@ func show_banner(text: String, color: Color = Color("ffe66d")) -> void:
 	tw.tween_property(combo_label, "modulate:a", 0.0, 0.25)
 
 func set_ammo(current: BlockDefs.BloomColor, next: BlockDefs.BloomColor) -> void:
+	# Keep orb polygons as soft color chips in the dock.
 	current_orb.color = BlockDefs.COLOR_HEX[current]
 	next_orb.color = BlockDefs.COLOR_HEX[next]
+	# Prefer textured preview if Sprite2D siblings exist.
+	var cur_s := get_node_or_null("%CurrentSprite") as Sprite2D
+	var nxt_s := get_node_or_null("%NextSprite") as Sprite2D
+	if cur_s:
+		cur_s.texture = PetalAtlas.PETAL[current]
+		cur_s.scale = Vector2.ONE * (48.0 / maxf(cur_s.texture.get_size().x, 1.0))
+		current_orb.visible = false
+	if nxt_s:
+		nxt_s.texture = PetalAtlas.PETAL[next]
+		nxt_s.scale = Vector2.ONE * (34.0 / maxf(nxt_s.texture.get_size().x, 1.0))
+		next_orb.visible = false
 
 func show_win(score: int, target: int) -> void:
 	veil.visible = true

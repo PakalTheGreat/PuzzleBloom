@@ -30,8 +30,8 @@ func _draw() -> void:
 	var rect := Rect2(48, 160, 624, 760)
 	var p := progress()
 	# Dim veil that lifts as blocks clear
-	var veil := 0.82 - p * 0.72
-	draw_rect(rect, Color(0.06, 0.1, 0.14, veil))
+	var veil := 0.55 - p * 0.5
+	draw_rect(rect, Color(1.0, 0.92, 0.9, veil))
 
 	# Soft painted garden (always under veil)
 	_draw_sky(rect, p)

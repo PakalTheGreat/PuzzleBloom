@@ -5,9 +5,8 @@ signal blocks_changed(remaining: int)
 signal cluster_cleared(count: int)
 signal resolution_finished(payload: Dictionary)
 
-const CELL := 64.0
-## Centered so column 4 lines up with cannon x=360.
-const ORIGIN := Vector2(104, 178)
+const CELL := 88.0
+var origin: Vector2 = Vector2(96, 210)
 
 var block_scene: PackedScene
 var blocks_root: Node2D
@@ -29,8 +28,11 @@ func clear_all() -> void:
 
 func spawn_from_level(level: LevelData) -> void:
 	clear_all()
-	floor_row = maxi(level.grid_rows - 1, 6)
+	floor_row = maxi(level.grid_rows - 1, 5)
+	# Recenter horizontally for this level width.
 	var cols := level.grid_cols
+	var total_w := float(cols - 1) * CELL
+	origin = Vector2(360.0 - total_w * 0.5, 200.0)
 	for i in level.layout.size():
 		var code := String(level.layout[i]).strip_edges()
 		if code == "." or code.is_empty():
@@ -51,10 +53,10 @@ func spawn_from_level(level: LevelData) -> void:
 	blocks_changed.emit(_blocks.size())
 
 func cell_to_world(cell: Vector2i) -> Vector2:
-	return ORIGIN + Vector2(cell.x * CELL, cell.y * CELL)
+	return origin + Vector2(cell.x * CELL, cell.y * CELL)
 
 func world_to_cell(pos: Vector2) -> Vector2i:
-	var local := pos - ORIGIN
+	var local := pos - origin
 	return Vector2i(roundi(local.x / CELL), roundi(local.y / CELL))
 
 func get_blocks() -> Array[BlockEntity]:

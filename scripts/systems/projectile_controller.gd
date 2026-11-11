@@ -5,7 +5,8 @@ signal shot_fired(color: BlockDefs.BloomColor)
 signal shot_resolved(payload: Dictionary)
 signal ammo_preview_changed(color: BlockDefs.BloomColor, next: BlockDefs.BloomColor)
 
-const CANNON_POS := Vector2(360, 1120)
+const CANNON_POS := Vector2(360, 1140)
+
 
 var projectile_scene: PackedScene
 var projectiles_root: Node2D
@@ -49,7 +50,7 @@ func begin_level(level: LevelData) -> void:
 	shots_left = level.shot_budget
 	# Bias opening colors toward layout density for teachable first shots
 	current_color = BlockDefs.BloomColor.VIOLET
-	next_color = BlockDefs.BloomColor.SUN
+	next_color = BlockDefs.BloomColor.ROSE
 	can_shoot = true
 	aiming = false
 	if aim_line:

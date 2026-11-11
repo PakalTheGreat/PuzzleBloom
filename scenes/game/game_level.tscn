@@ -17,40 +17,40 @@ size = Vector2(40, 1200)
 size = Vector2(720, 40)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_top"]
-bg_color = Color(0.05, 0.09, 0.14, 0.82)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.55, 0.85, 0.78, 0.28)
-corner_radius_top_left = 22
-corner_radius_top_right = 22
-corner_radius_bottom_right = 22
-corner_radius_bottom_left = 22
-content_margin_left = 16.0
-content_margin_top = 12.0
-content_margin_right = 16.0
-content_margin_bottom = 12.0
-shadow_color = Color(0, 0, 0, 0.35)
-shadow_size = 8
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_result"]
-bg_color = Color(0.07, 0.12, 0.18, 0.96)
+bg_color = Color(1, 0.97, 0.95, 0.88)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.95, 0.78, 0.42, 0.65)
-corner_radius_top_left = 28
-corner_radius_top_right = 28
-corner_radius_bottom_right = 28
-corner_radius_bottom_left = 28
+border_color = Color(1, 0.72, 0.82, 0.55)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+shadow_color = Color(0.85, 0.55, 0.65, 0.25)
+shadow_size = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_result"]
+bg_color = Color(1, 0.98, 0.96, 0.97)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.7, 0.8, 0.7)
+corner_radius_top_left = 30
+corner_radius_top_right = 30
+corner_radius_bottom_right = 30
+corner_radius_bottom_left = 30
 content_margin_left = 8.0
 content_margin_top = 8.0
 content_margin_right = 8.0
 content_margin_bottom = 8.0
-shadow_color = Color(0, 0, 0, 0.45)
-shadow_size = 16
+shadow_color = Color(0.9, 0.5, 0.65, 0.3)
+shadow_size = 18
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
 bg_color = Color(0.95, 0.78, 0.38, 1)
@@ -87,34 +87,8 @@ enabled = true
 [node name="Background" type="Node2D" parent="."]
 z_index = -20
 
-[node name="Sky" type="Polygon2D" parent="Background"]
-color = Color(0.14, 0.22, 0.34, 1)
-polygon = PackedVector2Array(0, 0, 720, 0, 720, 1280, 0, 1280)
-
-[node name="SkyGlow" type="Polygon2D" parent="Background"]
-color = Color(0.35, 0.55, 0.62, 0.35)
-polygon = PackedVector2Array(-40, -40, 760, -40, 760, 420, -40, 520)
-
-[node name="GardenWash" type="Polygon2D" parent="Background"]
-color = Color(0.18, 0.42, 0.36, 0.28)
-polygon = PackedVector2Array(0, 700, 720, 640, 720, 1280, 0, 1280)
-
-[node name="HillL" type="Polygon2D" parent="Background"]
-color = Color(0.16, 0.36, 0.32, 0.55)
-polygon = PackedVector2Array(-60, 1100, 220, 980, 360, 1120, 120, 1280, -60, 1280)
-
-[node name="HillR" type="Polygon2D" parent="Background"]
-color = Color(0.14, 0.32, 0.3, 0.5)
-polygon = PackedVector2Array(400, 1140, 780, 1000, 780, 1280, 520, 1280)
-
-[node name="Playframe" type="Polygon2D" parent="Background"]
-color = Color(0.08, 0.12, 0.18, 0.35)
-polygon = PackedVector2Array(36, 140, 684, 140, 684, 1040, 36, 1040)
-
-[node name="PlayframeEdge" type="Polygon2D" parent="Background"]
-z_index = 1
-color = Color(0.55, 0.85, 0.78, 0.18)
-polygon = PackedVector2Array(36, 140, 684, 140, 684, 148, 36, 148)
+[node name="Garden" type="Sprite2D" parent="Background"]
+centered = false
 
 [node name="World" type="Node2D" parent="."]
 
@@ -151,18 +125,19 @@ script = ExtResource("2")
 
 [node name="Cannon" type="Node2D" parent="World"]
 z_index = 8
-position = Vector2(360, 1120)
+position = Vector2(360, 1140)
 
-[node name="Glow" type="Polygon2D" parent="World/Cannon"]
+[node name="Glow" type="Sprite2D" parent="World/Cannon"]
 z_index = -1
-color = Color(1, 1, 1, 0.3)
+modulate = Color(1, 1, 1, 0.35)
+centered = true
 
-[node name="Body" type="Polygon2D" parent="World/Cannon"]
-color = Color(1, 0.42, 0.62, 1)
+[node name="Body" type="Sprite2D" parent="World/Cannon"]
+centered = true
 
-[node name="Core" type="Polygon2D" parent="World/Cannon"]
-color = Color(1, 1, 1, 0.85)
-polygon = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+[node name="Face" type="Sprite2D" parent="World/Cannon"]
+z_index = 2
+centered = true
 
 [node name="UI" type="CanvasLayer" parent="."]
 layer = 20
@@ -198,8 +173,9 @@ theme_override_constants/separation = 4
 [node name="TitleLabel" type="Label" parent="UI/TopBar/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Dawn Petals"
+theme_override_colors/font_color = Color(0.35, 0.22, 0.32, 1)
+theme_override_font_sizes/font_size = 30
+text = "Petal Pals"
 horizontal_alignment = 1
 
 [node name="StatsRow" type="HBoxContainer" parent="UI/TopBar/VBox"]
@@ -211,7 +187,8 @@ alignment = 1
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(0.4, 0.25, 0.35, 1)
+theme_override_font_sizes/font_size = 24
 text = "0"
 horizontal_alignment = 1
 
@@ -219,7 +196,8 @@ horizontal_alignment = 1
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(0.4, 0.25, 0.35, 1)
+theme_override_font_sizes/font_size = 24
 text = "20"
 horizontal_alignment = 1
 
@@ -228,8 +206,8 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
-theme_override_colors/font_color = Color(0.75, 0.9, 0.86, 1)
-text = "Goal 1,000"
+theme_override_colors/font_color = Color(0.55, 0.35, 0.45, 1)
+text = "Goal 1,200"
 horizontal_alignment = 1
 
 [node name="ComboLabel" type="Label" parent="UI"]
@@ -283,13 +261,25 @@ grow_vertical = 0
 
 [node name="CurrentOrb" type="Polygon2D" parent="UI/AmmoDock"]
 unique_name_in_owner = true
+visible = false
 position = Vector2(50, 70)
 color = Color(1, 0.42, 0.62, 1)
 
 [node name="NextOrb" type="Polygon2D" parent="UI/AmmoDock"]
 unique_name_in_owner = true
+visible = false
 position = Vector2(130, 78)
 color = Color(0.3, 0.8, 0.77, 1)
+
+[node name="CurrentSprite" type="Sprite2D" parent="UI/AmmoDock"]
+unique_name_in_owner = true
+position = Vector2(50, 58)
+centered = true
+
+[node name="NextSprite" type="Sprite2D" parent="UI/AmmoDock"]
+unique_name_in_owner = true
+position = Vector2(130, 66)
+centered = true
 
 [node name="AmmoHint" type="Label" parent="UI/AmmoDock"]
 offset_left = 100.0
@@ -312,7 +302,7 @@ offset_top = -210.0
 offset_right = 260.0
 offset_bottom = -170.0
 theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.78, 0.88, 0.86, 0.7)
+theme_override_colors/font_color = Color(0.45, 0.3, 0.4, 0.85)
 text = "Drag to aim · release to bloom"
 horizontal_alignment = 1
 
