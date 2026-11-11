@@ -25,3 +25,6 @@ android/
 # Local
 .env
 *.log
+
+addons/godot_mcp/cache/
+

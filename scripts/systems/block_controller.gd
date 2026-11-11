@@ -3,6 +3,7 @@ extends Node
 
 signal blocks_changed(remaining: int)
 signal cluster_cleared(count: int)
+signal resolution_finished(payload: Dictionary)
 
 const CELL := 72.0
 const ORIGIN := Vector2(84, 170)
@@ -34,7 +35,7 @@ func spawn_from_level(level: LevelData) -> void:
 		if code == "." or code.is_empty():
 			continue
 		var col := i % cols
-		var row := int(i / cols)
+		var row := int(i / float(cols))
 		var parsed := _parse_cell(code)
 		var block: BlockEntity = block_scene.instantiate()
 		blocks_root.add_child(block)
@@ -145,7 +146,9 @@ func _run_chains(payload: Dictionary) -> void:
 		AudioManager.play_chain()
 		await get_tree().create_timer(0.18).timeout
 		await _apply_gravity()
+	payload["remaining_blocks"] = remaining()
 	blocks_changed.emit(remaining())
+	resolution_finished.emit(payload)
 
 func _apply_gravity() -> void:
 	_prune()

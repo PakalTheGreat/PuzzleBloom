@@ -10,7 +10,6 @@ const RADIUS := 18.0
 var bloom_color: BlockDefs.BloomColor = BlockDefs.BloomColor.ROSE
 var direction: Vector2 = Vector2.UP
 var active: bool = false
-var _trail_timer: float = 0.0
 
 @onready var visual: Polygon2D = $Visual
 @onready var glow: Polygon2D = $Glow
@@ -74,9 +73,11 @@ func _physics_process(delta: float) -> void:
 		direction = direction.bounce(n).normalized()
 		# Tiny nudge out of contact.
 		global_position += n * 1.5
-	_trail_timer += delta
 	# Soft spin for life.
 	visual.rotation += delta * 8.0
+	# Leave playfield (fell below cannon / escaped).
+	if global_position.y > 1280.0 or global_position.y < 40.0 or global_position.x < -40.0 or global_position.x > 760.0:
+		retire()
 
 func _deactivate() -> void:
 	active = false

@@ -7,7 +7,7 @@ extends Resource
 @export var target_score: int = 1200
 @export var grid_cols: int = 7
 @export var grid_rows: int = 8
-@export var seed: int = 42
+@export var rng_seed: int = 42
 ## Row-major cell codes: "R","A","S","V","L" + optional suffix "2"=durable, "X"=AoE, "."=empty
 @export var layout: PackedStringArray = PackedStringArray()
 
@@ -19,7 +19,7 @@ static func etapa_a_level() -> LevelData:
 	data.target_score = 1000
 	data.grid_cols = 7
 	data.grid_rows = 9
-	data.seed = 11011
+	data.rng_seed = 11011
 	# Hand-crafted opening: clear clusters, one durable belt, one AoE seed.
 	data.layout = PackedStringArray([
 		".", "R", "R", "A", "A", "S", ".",

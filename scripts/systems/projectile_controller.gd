@@ -42,7 +42,7 @@ func setup(
 	score_system = scores
 
 func begin_level(level: LevelData) -> void:
-	_rng.seed = level.seed
+	_rng.seed = level.rng_seed
 	shots_left = level.shot_budget
 	current_color = BlockDefs.random_color(_rng, _color_pool.slice(0, 4))
 	next_color = BlockDefs.random_color(_rng, _color_pool.slice(0, 4))
@@ -125,7 +125,7 @@ func _fire(dir: Vector2) -> void:
 	next_color = BlockDefs.random_color(_rng, _color_pool.slice(0, 4))
 	ammo_preview_changed.emit(current_color, next_color)
 	# Safety timeout if projectile never hits
-	get_tree().create_timer(3.5).timeout.connect(_timeout_active.bind(proj), CONNECT_ONE_SHOT)
+	_arm_timeout(proj)
 
 func _on_impacted(proj: ProjectileEntity, block: BlockEntity) -> void:
 	if proj != _active:
@@ -140,12 +140,13 @@ func _on_impacted(proj: ProjectileEntity, block: BlockEntity) -> void:
 
 func _resolve(color: BlockDefs.BloomColor, block: BlockEntity) -> Dictionary:
 	var payload := block_controller.resolve_impact(block, color)
-	# Wait for gravity + chains kicked off inside controller
-	await get_tree().create_timer(0.55).timeout
-	# Extra wait if chains still settling
-	await get_tree().create_timer(0.15 * float(maxi(1, int(payload.get("chain_depth", 0))))).timeout
-	var destroyed := int(payload.get("destroyed_count", 0))
-	if destroyed > 0:
+	var destroyed_now := int(payload.get("destroyed_count", 0))
+	var durable_only := int(payload.get("durable_hits", 0)) > 0 and destroyed_now == 0
+	if destroyed_now > 0:
+		# Wait until gravity + settle chains finish mutating payload.
+		var finished: Dictionary = await block_controller.resolution_finished
+		payload = finished
+		var destroyed := int(payload.get("destroyed_count", 0))
 		var delta := score_system.register_match(
 			destroyed,
 			int(payload.get("chain_depth", 0)),
@@ -156,7 +157,7 @@ func _resolve(color: BlockDefs.BloomColor, block: BlockEntity) -> Dictionary:
 		AudioManager.play_match(score_system.combo)
 		if payload.get("had_aoe", false):
 			AudioManager.play_aoe()
-	elif int(payload.get("durable_hits", 0)) > 0:
+	elif durable_only:
 		score_system.register_chip()
 		score_system.break_combo()
 	else:
@@ -173,6 +174,8 @@ func _on_left(proj: ProjectileEntity) -> void:
 		shot_resolved.emit({"destroyed_count": 0, "shots_left": shots_left, "remaining_blocks": block_controller.remaining()})
 	proj.queue_free()
 
-func _timeout_active(proj: ProjectileEntity) -> void:
+func _arm_timeout(proj: ProjectileEntity) -> void:
+	var timer := get_tree().create_timer(3.5)
+	await timer.timeout
 	if is_instance_valid(proj) and proj == _active and proj.active:
 		proj.retire()

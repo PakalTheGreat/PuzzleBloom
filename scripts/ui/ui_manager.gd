@@ -38,12 +38,12 @@ func bind_level(level: LevelData) -> void:
 	set_combo(0)
 
 func set_score(score: int, delta: int = 0) -> void:
-	score_label.text = _format_score(score)
+	score_label.text = "Score  %s" % _format_score(score)
 	if delta > 0:
 		show_toast("+%s" % delta)
 
 func set_shots(n: int) -> void:
-	shots_label.text = str(n)
+	shots_label.text = "Petals  %s" % n
 
 func set_combo(combo: int) -> void:
 	if combo >= 2:
