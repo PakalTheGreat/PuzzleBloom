@@ -5,8 +5,8 @@ signal blocks_changed(remaining: int)
 signal cluster_cleared(count: int)
 signal resolution_finished(payload: Dictionary)
 
-const CELL := 88.0
-var origin: Vector2 = Vector2(96, 210)
+const CELL := 102.0
+var origin: Vector2 = Vector2(54, 190)
 
 var block_scene: PackedScene
 var blocks_root: Node2D

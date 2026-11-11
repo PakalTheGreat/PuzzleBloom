@@ -4,7 +4,8 @@ extends RigidBody2D
 signal damaged(remaining: int)
 signal destroyed(block: BlockEntity, reason: String)
 
-const SIZE := 92.0
+const SIZE := 108.0
+
 
 @export var bloom_color: BlockDefs.BloomColor = BlockDefs.BloomColor.ROSE
 @export var kind: BlockDefs.BlockKind = BlockDefs.BlockKind.COMMON
