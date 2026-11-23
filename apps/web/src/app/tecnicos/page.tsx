@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { CONFIG_MISSING_MESSAGE_PT, exploreSpecialists } from "@cwg/api";
+import { exploreSpecialists } from "@cwg/api";
 
-import { ConfigBanner } from "@/components/ConfigBanner";
 import { SiteHeader } from "@/components/SiteHeader";
+import { exploreDemoSpecialists } from "@/lib/demo/data";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,7 +24,12 @@ export default async function DirectoryPage({
   let rows: Array<Record<string, unknown>> = [];
   let fetchError: string | null = null;
 
-  if (configured) {
+  if (!configured) {
+    rows = exploreDemoSpecialists({
+      estado: params.estado,
+      q: params.q,
+    }) as unknown as Array<Record<string, unknown>>;
+  } else {
     const client = await createClient();
     if (client) {
       const { data, error } = await exploreSpecialists(client, {
@@ -38,7 +43,6 @@ export default async function DirectoryPage({
 
   return (
     <>
-      <ConfigBanner />
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-6 py-12">
         <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--cwg-green-deep)]">
@@ -71,16 +75,11 @@ export default async function DirectoryPage({
           </button>
         </form>
 
-        {!configured ? (
-          <p className="mt-8 text-sm text-[var(--cwg-text-secondary)]">
-            {CONFIG_MISSING_MESSAGE_PT}
-          </p>
-        ) : fetchError ? (
+        {fetchError ? (
           <p className="mt-8 text-sm text-red-700">{fetchError}</p>
         ) : rows.length === 0 ? (
           <p className="mt-8 text-sm text-[var(--cwg-text-secondary)]">
-            Nenhum especialista encontrado. Com seed + perfis ativos, a lista
-            aparece aqui.
+            Nenhum especialista encontrado.
           </p>
         ) : (
           <ul className="mt-8 space-y-4">

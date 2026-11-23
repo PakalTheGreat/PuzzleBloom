@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
-  CONFIG_MISSING_MESSAGE_PT,
   addCrmNote,
   addCrmServiceRecord,
   completeCrmTask,
@@ -16,8 +15,12 @@ import {
   updateCrmClient,
 } from "@cwg/api";
 
-import { ConfigBanner } from "@/components/ConfigBanner";
 import { SiteHeader } from "@/components/SiteHeader";
+import {
+  DEMO_CRM_CLIENTS,
+  DEMO_CRM_NOTES,
+  DEMO_CRM_TASKS,
+} from "@/lib/demo/data";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
@@ -34,7 +37,27 @@ export default function CrmDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    if (!configured || !id) return;
+    if (!id) return;
+    if (!configured) {
+      const found = DEMO_CRM_CLIENTS.find((c) => c.id === id);
+      if (!found) {
+        setError("Cliente não encontrado");
+        setClientRow(null);
+        return;
+      }
+      setClientRow({ ...found });
+      setNotes(DEMO_CRM_NOTES.filter((n) => n.client_id === id) as Array<Record<string, unknown>>);
+      setTasks(DEMO_CRM_TASKS.filter((t) => t.client_id === id) as Array<Record<string, unknown>>);
+      setHistory([
+        {
+          id: "hist-1",
+          summary: "Consulta remota de SOP",
+          occurred_on: "2026-11-10",
+        },
+      ]);
+      setError(null);
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const { data: c, error: cErr } = await getCrmClient(client, id);
@@ -62,6 +85,10 @@ export default function CrmDetailPage() {
   }, [reload]);
 
   async function saveStatus(status: string) {
+    if (!configured) {
+      setClientRow((prev) => (prev ? { ...prev, status } : prev));
+      return;
+    }
     const client = createClient();
     if (!client || !id) return;
     await updateCrmClient(client, id, { status });
@@ -70,6 +97,19 @@ export default function CrmDetailPage() {
 
   async function addNote() {
     if (!note.trim() || !id) return;
+    if (!configured) {
+      setNotes((prev) => [
+        {
+          id: `note-${Date.now()}`,
+          client_id: id,
+          body: note.trim(),
+          created_at: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+      setNote("");
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const { error: err } = await addCrmNote(client, id, note.trim());
@@ -82,6 +122,20 @@ export default function CrmDetailPage() {
 
   async function addTask() {
     if (!taskTitle.trim() || !clientRow) return;
+    if (!configured) {
+      setTasks((prev) => [
+        ...prev,
+        {
+          id: `task-${Date.now()}`,
+          client_id: id,
+          title: taskTitle.trim(),
+          status: "open",
+          due_at: null,
+        },
+      ]);
+      setTaskTitle("");
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const { error: err } = await createCrmTask(client, {
@@ -98,6 +152,18 @@ export default function CrmDetailPage() {
 
   async function addHistory() {
     if (!serviceSummary.trim() || !id) return;
+    if (!configured) {
+      setHistory((prev) => [
+        {
+          id: `hist-${Date.now()}`,
+          summary: serviceSummary.trim(),
+          occurred_on: new Date().toISOString().slice(0, 10),
+        },
+        ...prev,
+      ]);
+      setServiceSummary("");
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const { error: err } = await addCrmServiceRecord(client, {
@@ -114,38 +180,42 @@ export default function CrmDetailPage() {
 
   return (
     <>
-      <ConfigBanner />
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-6 py-12">
         <Link href="/crm" className="text-sm text-[var(--cwg-green)]">
           ← CRM
         </Link>
-        {!configured ? (
-          <p className="mt-8 text-sm">{CONFIG_MISSING_MESSAGE_PT}</p>
-        ) : !clientRow ? (
+        {!clientRow ? (
           <p className="mt-8 text-sm">{error || "Carregando…"}</p>
         ) : (
           <>
             <h1 className="mt-4 font-[family-name:var(--font-fraunces)] text-3xl text-[var(--cwg-green-deep)]">
               {String(clientRow.display_name)}
             </h1>
-            <p className="mt-1 text-sm text-[var(--cwg-text-secondary)]">
-              {String(clientRow.status)} · {String(clientRow.email ?? "—")} ·{" "}
-              {String(clientRow.phone ?? "—")}
+            <p className="mt-2 text-sm text-[var(--cwg-text-secondary)]">
+              {String(clientRow.email || "—")} · {String(clientRow.phone || "—")}
             </p>
             {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
-            <div className="mt-4 flex flex-wrap gap-2 text-xs">
-              {(["lead", "active", "inactive", "archived"] as const).map((s) => (
+            <div className="mt-4 flex flex-wrap gap-2 text-sm">
+              {["lead", "active", "paused", "archived"].map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => void saveStatus(s)}
-                  className="rounded border px-2 py-1"
+                  className={`rounded-[10px] px-3 py-1 ${
+                    clientRow.status === s
+                      ? "bg-[var(--cwg-green)] text-white"
+                      : "border"
+                  }`}
                 >
                   {s}
                 </button>
               ))}
             </div>
+
+            {clientRow.notes ? (
+              <p className="mt-6 text-sm text-[var(--cwg-text)]">{String(clientRow.notes)}</p>
+            ) : null}
 
             <section className="mt-10">
               <h2 className="font-semibold">Notas privadas</h2>
@@ -166,10 +236,12 @@ export default function CrmDetailPage() {
               </div>
               <ul className="mt-4 space-y-2 text-sm">
                 {notes.map((n) => (
-                  <li key={String(n.id)} className="border-b border-[var(--cwg-graphite-100)] pb-2">
+                  <li key={String(n.id)} className="border-b pb-2">
                     {String(n.body)}
                     <div className="text-xs text-[var(--cwg-graphite-400)]">
-                      {n.created_at ? new Date(String(n.created_at)).toLocaleString("pt-BR") : ""}
+                      {n.created_at
+                        ? new Date(String(n.created_at)).toLocaleString("pt-BR")
+                        : ""}
                     </div>
                   </li>
                 ))}
@@ -195,23 +267,37 @@ export default function CrmDetailPage() {
               </div>
               <ul className="mt-4 space-y-2 text-sm">
                 {tasks.map((t) => (
-                  <li
-                    key={String(t.id)}
-                    className="flex items-center justify-between border-b border-[var(--cwg-graphite-100)] pb-2"
-                  >
-                    <span className={t.done_at ? "line-through opacity-60" : ""}>
-                      {String(t.title)}
+                  <li key={String(t.id)} className="flex items-center justify-between gap-3">
+                    <span>
+                      {String(t.title)}{" "}
+                      <span className="text-[var(--cwg-text-secondary)]">
+                        ({String(t.status)})
+                      </span>
                     </span>
-                    {!t.done_at ? (
+                    {t.status === "open" && configured ? (
                       <button
                         type="button"
                         className="text-xs text-[var(--cwg-green)]"
-                        onClick={async () => {
+                        onClick={() => {
                           const client = createClient();
                           if (!client) return;
-                          await completeCrmTask(client, String(t.id));
-                          await reload();
+                          void completeCrmTask(client, String(t.id)).then(() => reload());
                         }}
+                      >
+                        Concluir
+                      </button>
+                    ) : null}
+                    {t.status === "open" && !configured ? (
+                      <button
+                        type="button"
+                        className="text-xs text-[var(--cwg-green)]"
+                        onClick={() =>
+                          setTasks((prev) =>
+                            prev.map((row) =>
+                              row.id === t.id ? { ...row, status: "done" } : row,
+                            ),
+                          )
+                        }
                       >
                         Concluir
                       </button>
@@ -222,7 +308,7 @@ export default function CrmDetailPage() {
             </section>
 
             <section className="mt-10">
-              <h2 className="font-semibold">Histórico de serviços</h2>
+              <h2 className="font-semibold">Histórico de serviço</h2>
               <div className="mt-3 flex gap-2">
                 <input
                   className="flex-1 rounded border px-2 py-1 text-sm"
@@ -240,11 +326,8 @@ export default function CrmDetailPage() {
               </div>
               <ul className="mt-4 space-y-2 text-sm">
                 {history.map((h) => (
-                  <li key={String(h.id)} className="border-b border-[var(--cwg-graphite-100)] pb-2">
-                    {String(h.summary)}
-                    <div className="text-xs text-[var(--cwg-graphite-400)]">
-                      {String(h.occurred_on ?? "")}
-                    </div>
+                  <li key={String(h.id)}>
+                    {String(h.summary)} · {String(h.occurred_on)}
                   </li>
                 ))}
               </ul>

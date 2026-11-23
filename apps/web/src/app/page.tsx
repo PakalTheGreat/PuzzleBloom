@@ -1,13 +1,8 @@
 import Link from "next/link";
 
-import { ConfigBanner } from "@/components/ConfigBanner";
-
 export default function HomePage() {
   return (
     <main className="relative min-h-screen overflow-hidden">
-      <div className="relative z-20">
-        <ConfigBanner />
-      </div>
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(15,61,46,0.92),rgba(20,24,31,0.88))]"
@@ -39,6 +34,12 @@ export default function HomePage() {
             className="rounded-[10px] bg-[var(--cwg-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--cwg-graphite-950)] transition hover:brightness-110"
           >
             Ver especialistas
+          </Link>
+          <Link
+            href="/entrar"
+            className="rounded-[10px] border border-white/25 px-5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10"
+          >
+            Entrar na demo
           </Link>
           <Link
             href="/cadastrar"

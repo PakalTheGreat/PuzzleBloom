@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signUpSchema } from "@cwg/validation";
-import { CONFIG_MISSING_MESSAGE_PT, signUpWithEmail } from "@cwg/api";
+import { signUpWithEmail } from "@cwg/api";
 
+import { writeDemoSessionClient } from "@/lib/demo/client-session";
+import type { DemoSession } from "@/lib/demo/types";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
@@ -23,10 +25,7 @@ export default function SignUpPage() {
     e.preventDefault();
     setError(null);
     setInfo(null);
-    if (!configured) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
-      return;
-    }
+
     const parsed = signUpSchema.safeParse({
       email,
       password,
@@ -36,9 +35,38 @@ export default function SignUpPage() {
       setError(parsed.error.issues[0]?.message ?? "Dados inválidos");
       return;
     }
+
+    if (!configured) {
+      setLoading(true);
+      const session: DemoSession = {
+        userId: `user-${Date.now()}`,
+        email: parsed.data.email,
+        fullName: parsed.data.full_name,
+        roles: [],
+        activeRole: "grower",
+        onboardingComplete: false,
+        specialistProfileId: null,
+        growerProfileId: null,
+      };
+      const res = await fetch("/api/demo/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session }),
+      });
+      setLoading(false);
+      if (!res.ok) {
+        setError("Não foi possível criar a conta demo.");
+        return;
+      }
+      writeDemoSessionClient(session);
+      router.push("/onboarding");
+      router.refresh();
+      return;
+    }
+
     const client = createClient();
     if (!client) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      setError("Cliente indisponível");
       return;
     }
     setLoading(true);
@@ -64,7 +92,9 @@ export default function SignUpPage() {
         Criar conta
       </h1>
       <p className="mt-2 text-sm text-[var(--cwg-text-secondary)]">
-        Cadastro com e-mail e senha. Google OAuth fica para depois.
+        {configured
+          ? "Cadastro com e-mail e senha. Google OAuth fica para depois."
+          : "Modo demonstração — após o cadastro você escolhe o papel no onboarding."}
       </p>
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <label className="block text-sm">

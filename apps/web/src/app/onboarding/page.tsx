@@ -3,15 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LEGAL_COPY } from "@cwg/shared";
-import {
-  activateRolesFromIntent,
-  CONFIG_MISSING_MESSAGE_PT,
-  recordLegalAndAge,
-} from "@cwg/api";
+import { activateRolesFromIntent, recordLegalAndAge } from "@cwg/api";
 import type { RoleIntent } from "@cwg/validation";
 
-import { ConfigBanner } from "@/components/ConfigBanner";
 import { SiteHeader } from "@/components/SiteHeader";
+import {
+  clearDemoSessionClient,
+  readDemoSessionClient,
+  writeDemoSessionClient,
+} from "@/lib/demo/client-session";
+import type { AppRole, DemoSession } from "@/lib/demo/types";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
@@ -33,6 +34,12 @@ const INTENTS: { id: RoleIntent; title: string; body: string }[] = [
   },
 ];
 
+function rolesFromIntent(intent: RoleIntent): AppRole[] {
+  if (intent === "find") return ["grower"];
+  if (intent === "offer") return ["specialist"];
+  return ["grower", "specialist"];
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const { configured } = getPublicSupabaseEnv();
@@ -50,13 +57,20 @@ export default function OnboardingPage() {
       setError("Confirme idade e aceite Termos e Privacidade.");
       return;
     }
+
     if (!configured) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      const session = readDemoSessionClient();
+      if (!session) {
+        router.push("/entrar?next=/onboarding");
+        return;
+      }
+      setStep("roles");
       return;
     }
+
     const client = createClient();
     if (!client) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      setError("Cliente indisponível");
       return;
     }
     setLoading(true);
@@ -85,13 +99,43 @@ export default function OnboardingPage() {
 
   async function finishRoles() {
     setError(null);
+
     if (!configured) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      const current = readDemoSessionClient();
+      if (!current) {
+        router.push("/entrar?next=/onboarding");
+        return;
+      }
+      setLoading(true);
+      const roles = rolesFromIntent(intent);
+      const activeRole = roles.includes("specialist") ? "specialist" : "grower";
+      const next: DemoSession = {
+        ...current,
+        roles,
+        activeRole,
+        onboardingComplete: true,
+        specialistProfileId: roles.includes("specialist")
+          ? current.specialistProfileId ?? "sp-ana"
+          : null,
+        growerProfileId: roles.includes("grower")
+          ? current.growerProfileId ?? `gp-${current.userId}`
+          : null,
+      };
+      await fetch("/api/demo/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session: next }),
+      });
+      writeDemoSessionClient(next);
+      setLoading(false);
+      router.push("/conta");
+      router.refresh();
       return;
     }
+
     const client = createClient();
     if (!client) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      setError("Cliente indisponível");
       return;
     }
     setLoading(true);
@@ -120,7 +164,6 @@ export default function OnboardingPage() {
 
   return (
     <>
-      <ConfigBanner />
       <SiteHeader />
       <main className="mx-auto max-w-lg px-6 py-12">
         <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--cwg-green-deep)]">
@@ -176,7 +219,7 @@ export default function OnboardingPage() {
             <button
               type="button"
               disabled={loading}
-              onClick={finishLegal}
+              onClick={() => void finishLegal()}
               className="rounded-[10px] bg-[var(--cwg-green)] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               Continuar
@@ -210,10 +253,20 @@ export default function OnboardingPage() {
             <button
               type="button"
               disabled={loading}
-              onClick={finishRoles}
+              onClick={() => void finishRoles()}
               className="rounded-[10px] bg-[var(--cwg-green)] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               Concluir
+            </button>
+            <button
+              type="button"
+              className="ml-3 text-sm text-[var(--cwg-text-secondary)]"
+              onClick={() => {
+                clearDemoSessionClient();
+                router.push("/entrar");
+              }}
+            >
+              Cancelar
             </button>
           </div>
         )}

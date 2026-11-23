@@ -3,13 +3,23 @@
 import { useEffect, useState } from "react";
 import { isFavorite, toggleFavorite } from "@cwg/api";
 
+import { readDemoSessionClient } from "@/lib/demo/client-session";
+import { DEMO_FAVORITES } from "@/lib/demo/data";
+import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
 export function FavoriteButton({ specialistProfileId }: { specialistProfileId: string }) {
+  const { configured } = getPublicSupabaseEnv();
   const [on, setOn] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!configured) {
+      const session = readDemoSessionClient();
+      if (!session) return;
+      setOn(DEMO_FAVORITES.some((f) => f.specialist_profiles.id === specialistProfileId));
+      return;
+    }
     const client = createClient();
     if (!client) return;
     void (async () => {
@@ -18,15 +28,22 @@ export function FavoriteButton({ specialistProfileId }: { specialistProfileId: s
       const { data } = await isFavorite(client, auth.user.id, specialistProfileId);
       setOn(data);
     })();
-  }, [specialistProfileId]);
+  }, [configured, specialistProfileId]);
 
   async function toggle() {
     setMsg(null);
-    const client = createClient();
-    if (!client) {
-      setMsg("Configure o Supabase.");
+    if (!configured) {
+      const session = readDemoSessionClient();
+      if (!session) {
+        setMsg("Faça login para salvar favoritos.");
+        return;
+      }
+      setOn((v) => !v);
+      setMsg(on ? "Removido dos favoritos (demo)." : "Salvo nos favoritos (demo).");
       return;
     }
+    const client = createClient();
+    if (!client) return;
     const { data: auth } = await client.auth.getUser();
     if (!auth.user) {
       setMsg("Faça login.");

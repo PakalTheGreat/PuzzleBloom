@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  CONFIG_MISSING_MESSAGE_PT,
   WEEKDAY_LABELS_PT,
   addAvailabilityException,
   addDays,
@@ -13,8 +12,13 @@ import {
   upsertAvailabilityRule,
 } from "@cwg/api";
 
-import { ConfigBanner } from "@/components/ConfigBanner";
 import { SiteHeader } from "@/components/SiteHeader";
+import { readDemoSessionClient } from "@/lib/demo/client-session";
+import {
+  DEMO_APPOINTMENTS,
+  DEMO_AVAILABILITY_RULES,
+  DEMO_EXCEPTIONS,
+} from "@/lib/demo/data";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { getMySpecialistProfileId } from "@/lib/specialist";
@@ -67,7 +71,28 @@ export default function CalendarioPage() {
   }, [anchor, view]);
 
   const reload = useCallback(async () => {
-    if (!configured) return;
+    if (!configured) {
+      const session = readDemoSessionClient();
+      if (!session || session.activeRole !== "specialist") {
+        setError("Login especialista necessário.");
+        return;
+      }
+      const id = session.specialistProfileId ?? "sp-ana";
+      setSpId(id);
+      setError(null);
+      setAppts(
+        DEMO_APPOINTMENTS.filter((a) => a.specialist_profile_id === id).map((a) => ({
+          id: a.id,
+          status: a.status,
+          starts_at: a.starts_at,
+          ends_at: a.ends_at,
+          mode: a.mode,
+        })),
+      );
+      setRules([...DEMO_AVAILABILITY_RULES]);
+      setExceptions([...DEMO_EXCEPTIONS]);
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const { data: auth } = await client.auth.getUser();
@@ -100,6 +125,19 @@ export default function CalendarioPage() {
 
   async function addRule() {
     if (!spId) return;
+    if (!configured) {
+      setRules((prev) => [
+        ...prev,
+        {
+          id: `rule-${Date.now()}`,
+          weekday,
+          start_time: startTime,
+          end_time: endTime,
+          mode: "remote",
+        },
+      ]);
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const { error: err } = await upsertAvailabilityRule(client, {
@@ -115,6 +153,17 @@ export default function CalendarioPage() {
 
   async function blockToday() {
     if (!spId) return;
+    if (!configured) {
+      setExceptions((prev) => [
+        ...prev,
+        {
+          id: `ex-${Date.now()}`,
+          exception_date: new Date().toISOString().slice(0, 10),
+          note: "Bloqueio manual",
+        },
+      ]);
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const { error: err } = await addAvailabilityException(client, {
@@ -137,7 +186,6 @@ export default function CalendarioPage() {
 
   return (
     <>
-      <ConfigBanner />
       <SiteHeader />
       <main className="mx-auto max-w-5xl px-6 py-12">
         <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--cwg-green-deep)]">
@@ -170,9 +218,7 @@ export default function CalendarioPage() {
           </button>
         </div>
 
-        {!configured ? (
-          <p className="mt-8 text-sm">{CONFIG_MISSING_MESSAGE_PT}</p>
-        ) : error ? (
+        {error ? (
           <p className="mt-8 text-sm text-red-700">{error}</p>
         ) : view === "agenda" ? (
           <ul className="mt-8 space-y-3 text-sm">

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { CONFIG_MISSING_MESSAGE_PT, getSpecialistBySlug } from "@cwg/api";
+import { getSpecialistBySlug } from "@cwg/api";
 
-import { ConfigBanner } from "@/components/ConfigBanner";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { RequestServiceButton } from "@/components/RequestServiceButton";
 import { SiteHeader } from "@/components/SiteHeader";
+import { getDemoSpecialistBySlug } from "@/lib/demo/data";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,7 +27,9 @@ export default async function TecnicoPublicPage({ params }: PageProps) {
   let profile: Record<string, unknown> | null = null;
   let errorMsg: string | null = null;
 
-  if (configured) {
+  if (!configured) {
+    profile = (getDemoSpecialistBySlug(slug) as Record<string, unknown> | null) ?? null;
+  } else {
     const client = await createClient();
     if (client) {
       const { data, error } = await getSpecialistBySlug(client, slug);
@@ -44,16 +46,9 @@ export default async function TecnicoPublicPage({ params }: PageProps) {
 
   return (
     <>
-      <ConfigBanner />
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-6 py-12">
-        {!configured ? (
-          <p className="text-sm text-[var(--cwg-text-secondary)]">
-            {CONFIG_MISSING_MESSAGE_PT}
-            <br />
-            Stub: <code>/tecnicos/{slug}</code>
-          </p>
-        ) : errorMsg ? (
+        {errorMsg ? (
           <p className="text-sm text-red-700">{errorMsg}</p>
         ) : !profile ? (
           <div>

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
-  CONFIG_MISSING_MESSAGE_PT,
   cancelAppointment,
   confirmAppointmentSide,
   listAppointmentsForUser,
@@ -12,8 +11,9 @@ import {
   updateAppointmentStatus,
 } from "@cwg/api";
 
-import { ConfigBanner } from "@/components/ConfigBanner";
 import { SiteHeader } from "@/components/SiteHeader";
+import { readDemoSessionClient } from "@/lib/demo/client-session";
+import { DEMO_APPOINTMENTS } from "@/lib/demo/data";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { getMySpecialistProfileId } from "@/lib/specialist";
@@ -58,7 +58,37 @@ export default function AgendamentosPage() {
   const [reviewBody, setReviewBody] = useState("");
 
   const reload = useCallback(async () => {
-    if (!configured) return;
+    if (!configured) {
+      const session = readDemoSessionClient();
+      if (!session) {
+        setError("Faça login para ver agendamentos.");
+        return;
+      }
+      setUserId(session.userId);
+      const spId = session.specialistProfileId;
+      setSpecialistId(spId);
+      const asSpecialist = role === "specialist" && spId;
+      const data = DEMO_APPOINTMENTS.filter((a) =>
+        asSpecialist
+          ? a.specialist_profile_id === spId
+          : a.grower_user_id === session.userId || role === "grower",
+      );
+      // For grower demo persona, show grower appointments; for specialist view filter by sp
+      const filtered =
+        role === "specialist"
+          ? DEMO_APPOINTMENTS.filter(
+              (a) => a.specialist_profile_id === (spId ?? "sp-ana"),
+            )
+          : DEMO_APPOINTMENTS.filter(
+              (a) =>
+                a.grower_user_id === "user-carlos" ||
+                a.grower_user_id === session.userId,
+            );
+      setError(null);
+      setRows(filtered as unknown as Appt[]);
+      void data;
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const { data: auth } = await client.auth.getUser();
@@ -83,12 +113,32 @@ export default function AgendamentosPage() {
   }, [configured, role]);
 
   useEffect(() => {
+    const session = !configured ? readDemoSessionClient() : null;
+    if (session?.activeRole === "specialist") setRole("specialist");
+    else if (session?.activeRole === "grower") setRole("grower");
+  }, [configured]);
+
+  useEffect(() => {
     void reload();
   }, [reload]);
 
   async function act(appt: Appt, next: string) {
     setInfo(null);
     setError(null);
+    if (!configured) {
+      setRows((prev) =>
+        prev.map((a) =>
+          a.id === appt.id
+            ? {
+                ...a,
+                status: next.startsWith("cancelled") ? "cancelled" : next,
+              }
+            : a,
+        ),
+      );
+      setInfo(next.startsWith("cancelled") ? "Agendamento cancelado." : `Status → ${next}`);
+      return;
+    }
     const client = createClient();
     if (!client) return;
     if (next.startsWith("cancelled")) {
@@ -110,6 +160,39 @@ export default function AgendamentosPage() {
   async function confirmSide(appt: Appt) {
     setInfo(null);
     setError(null);
+    if (!configured) {
+      setRows((prev) =>
+        prev.map((a) => {
+          if (a.id !== appt.id) return a;
+          const conf = a.service_confirmations?.[0] ?? {
+            id: "sc-local",
+            grower_confirmed_at: null,
+            specialist_confirmed_at: null,
+          };
+          const updated = {
+            ...conf,
+            grower_confirmed_at:
+              role === "grower"
+                ? new Date().toISOString()
+                : conf.grower_confirmed_at,
+            specialist_confirmed_at:
+              role === "specialist"
+                ? new Date().toISOString()
+                : conf.specialist_confirmed_at,
+          };
+          const mutual =
+            Boolean(updated.grower_confirmed_at) &&
+            Boolean(updated.specialist_confirmed_at);
+          setInfo(
+            mutual
+              ? "Confirmação mútua completa — avaliação liberada."
+              : "Sua confirmação foi registrada. Aguardando a outra parte.",
+          );
+          return { ...a, service_confirmations: [updated] };
+        }),
+      );
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const { error: err, reviewEligible } = await confirmAppointmentSide(
@@ -129,6 +212,12 @@ export default function AgendamentosPage() {
 
   async function sendReview(appt: Appt) {
     if (!userId) return;
+    if (!configured) {
+      setInfo("Avaliação enviada (demo).");
+      setReviewFor(null);
+      setReviewBody("");
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const { error: err } = await submitReview(client, {
@@ -148,7 +237,6 @@ export default function AgendamentosPage() {
 
   return (
     <>
-      <ConfigBanner />
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-6 py-12">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -171,7 +259,7 @@ export default function AgendamentosPage() {
             <button
               type="button"
               onClick={() => setRole("specialist")}
-              disabled={!specialistId}
+              disabled={!specialistId && configured}
               className={`rounded-[10px] px-3 py-1.5 disabled:opacity-40 ${role === "specialist" ? "bg-[var(--cwg-green)] text-white" : "border"}`}
             >
               Especialista
@@ -179,139 +267,125 @@ export default function AgendamentosPage() {
           </div>
         </div>
 
-        {!configured ? (
-          <p className="mt-8 text-sm">{CONFIG_MISSING_MESSAGE_PT}</p>
-        ) : (
-          <>
-            {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
-            {info ? <p className="mt-4 text-sm text-[var(--cwg-green)]">{info}</p> : null}
-            <ul className="mt-8 space-y-6">
-              {rows.length === 0 ? (
-                <li className="text-sm text-[var(--cwg-text-secondary)]">
-                  Nenhum agendamento. Solicite em um perfil{" "}
-                  <Link href="/tecnicos" className="text-[var(--cwg-green)]">
-                    /tecnicos
-                  </Link>
-                  .
-                </li>
-              ) : (
-                rows.map((a) => {
-                  const conf = a.service_confirmations?.[0];
-                  const mutual =
-                    Boolean(conf?.grower_confirmed_at) &&
-                    Boolean(conf?.specialist_confirmed_at);
-                  const actions = nextAppointmentActions(a.status, role);
-                  const name =
-                    a.specialist_profiles?.users?.full_name ||
-                    a.specialist_profiles?.slug ||
-                    a.id.slice(0, 8);
-                  return (
-                    <li
-                      key={a.id}
-                      className="rounded-[10px] border border-[var(--cwg-graphite-100)] bg-white/80 p-4"
-                    >
-                      <div className="font-semibold text-[var(--cwg-graphite-900)]">
-                        {name} · <span className="text-[var(--cwg-green)]">{a.status}</span>
-                      </div>
-                      <div className="mt-1 text-sm text-[var(--cwg-text-secondary)]">
-                        {new Date(a.starts_at).toLocaleString("pt-BR")} →{" "}
-                        {new Date(a.ends_at).toLocaleString("pt-BR")} · {a.mode}
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {actions.map((next) => (
-                          <button
-                            key={next}
-                            type="button"
-                            onClick={() => void act(a, next)}
-                            className="rounded-[8px] border border-[var(--cwg-graphite-200)] px-3 py-1 text-xs font-medium hover:bg-[var(--cwg-graphite-50)]"
-                          >
-                            {next}
-                          </button>
-                        ))}
-                        {a.status === "completed" ? (
-                          <button
-                            type="button"
-                            onClick={() => void confirmSide(a)}
-                            className="rounded-[8px] bg-[var(--cwg-green)] px-3 py-1 text-xs font-semibold text-white"
-                          >
-                            Confirmar serviço ({role})
-                          </button>
-                        ) : null}
-                        {mutual && role === "grower" ? (
-                          <button
-                            type="button"
-                            onClick={() => setReviewFor(a.id)}
-                            className="rounded-[8px] bg-[var(--cwg-accent)] px-3 py-1 text-xs font-semibold text-[var(--cwg-graphite-950)]"
-                          >
-                            Avaliar
-                          </button>
-                        ) : null}
-                      </div>
-                      {a.status === "completed" ? (
-                        <p className="mt-2 text-xs text-[var(--cwg-graphite-400)]">
-                          Confirmações: cultivador{" "}
-                          {conf?.grower_confirmed_at ? "✓" : "…"} · especialista{" "}
-                          {conf?.specialist_confirmed_at ? "✓" : "…"}
-                        </p>
-                      ) : null}
-                      {reviewFor === a.id ? (
-                        <div className="mt-4 space-y-2 border-t border-[var(--cwg-graphite-100)] pt-4 text-sm">
-                          {(
-                            [
-                              "professionalism",
-                              "communication",
-                              "punctuality",
-                              "technical",
-                              "organization",
-                            ] as const
-                          ).map((key) => (
-                            <label key={key} className="flex items-center justify-between gap-4">
-                              <span>{key}</span>
-                              <input
-                                type="number"
-                                min={1}
-                                max={5}
-                                className="w-16 rounded border px-2 py-1"
-                                value={scores[key]}
-                                onChange={(e) =>
-                                  setScores((s) => ({
-                                    ...s,
-                                    [key]: Number(e.target.value),
-                                  }))
-                                }
-                              />
-                            </label>
-                          ))}
-                          <textarea
-                            className="w-full rounded border px-2 py-1"
-                            placeholder="Comentário (opcional)"
-                            value={reviewBody}
-                            onChange={(e) => setReviewBody(e.target.value)}
+        {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
+        {info ? <p className="mt-4 text-sm text-[var(--cwg-green)]">{info}</p> : null}
+        <ul className="mt-8 space-y-6">
+          {rows.length === 0 ? (
+            <li className="text-sm text-[var(--cwg-text-secondary)]">
+              Nenhum agendamento. Solicite em um perfil{" "}
+              <Link href="/tecnicos" className="text-[var(--cwg-green)]">
+                /tecnicos
+              </Link>
+              .
+            </li>
+          ) : (
+            rows.map((a) => {
+              const conf = a.service_confirmations?.[0];
+              const mutual =
+                Boolean(conf?.grower_confirmed_at) &&
+                Boolean(conf?.specialist_confirmed_at);
+              const actions = nextAppointmentActions(a.status, role);
+              const name =
+                a.specialist_profiles?.users?.full_name ||
+                a.specialist_profiles?.slug ||
+                a.id.slice(0, 8);
+              return (
+                <li
+                  key={a.id}
+                  className="rounded-[10px] border border-[var(--cwg-graphite-100)] bg-white/80 p-4"
+                >
+                  <div className="font-semibold text-[var(--cwg-graphite-900)]">
+                    {name} · <span className="text-[var(--cwg-green)]">{a.status}</span>
+                  </div>
+                  <div className="mt-1 text-sm text-[var(--cwg-text-secondary)]">
+                    {new Date(a.starts_at).toLocaleString("pt-BR")} →{" "}
+                    {new Date(a.ends_at).toLocaleString("pt-BR")} · {a.mode}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {actions.map((next) => (
+                      <button
+                        key={next}
+                        type="button"
+                        onClick={() => void act(a, next)}
+                        className="rounded-[8px] border border-[var(--cwg-graphite-200)] px-3 py-1 text-xs font-medium hover:bg-[var(--cwg-graphite-50)]"
+                      >
+                        {next}
+                      </button>
+                    ))}
+                    {a.status === "completed" ? (
+                      <button
+                        type="button"
+                        onClick={() => void confirmSide(a)}
+                        className="rounded-[8px] bg-[var(--cwg-green)] px-3 py-1 text-xs font-semibold text-white"
+                      >
+                        Confirmar serviço ({role})
+                      </button>
+                    ) : null}
+                    {mutual && role === "grower" ? (
+                      <button
+                        type="button"
+                        onClick={() => setReviewFor(a.id)}
+                        className="rounded-[8px] bg-[var(--cwg-accent)] px-3 py-1 text-xs font-semibold text-[var(--cwg-graphite-950)]"
+                      >
+                        Avaliar
+                      </button>
+                    ) : null}
+                  </div>
+                  {a.status === "completed" ? (
+                    <p className="mt-2 text-xs text-[var(--cwg-graphite-400)]">
+                      Confirmações: cultivador{" "}
+                      {conf?.grower_confirmed_at ? "✓" : "…"} · especialista{" "}
+                      {conf?.specialist_confirmed_at ? "✓" : "…"}
+                    </p>
+                  ) : null}
+                  {reviewFor === a.id ? (
+                    <div className="mt-4 space-y-2 border-t border-[var(--cwg-graphite-100)] pt-4 text-sm">
+                      {(
+                        [
+                          "professionalism",
+                          "communication",
+                          "punctuality",
+                          "technical",
+                          "organization",
+                        ] as const
+                      ).map((key) => (
+                        <label key={key} className="flex items-center justify-between gap-4">
+                          <span>{key}</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={5}
+                            className="w-16 rounded border px-2 py-1"
+                            value={scores[key]}
+                            onChange={(e) =>
+                              setScores((s) => ({
+                                ...s,
+                                [key]: Number(e.target.value),
+                              }))
+                            }
                           />
-                          <button
-                            type="button"
-                            onClick={() => void sendReview(a)}
-                            className="rounded-[8px] bg-[var(--cwg-green)] px-3 py-1.5 text-xs font-semibold text-white"
-                          >
-                            Enviar avaliação
-                          </button>
-                        </div>
-                      ) : null}
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-            <div className="mt-8 flex gap-4 text-sm">
-              <Link href="/solicitacoes" className="text-[var(--cwg-green)]">
-                Solicitações
-              </Link>
-              <Link href="/calendario" className="text-[var(--cwg-green)]">
-                Calendário
-              </Link>
-            </div>
-          </>
-        )}
+                        </label>
+                      ))}
+                      <textarea
+                        className="w-full rounded border px-2 py-1"
+                        placeholder="Comentário (opcional)"
+                        value={reviewBody}
+                        onChange={(e) => setReviewBody(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void sendReview(a)}
+                        className="rounded-[8px] bg-[var(--cwg-green)] px-3 py-1.5 text-xs font-semibold text-white"
+                      >
+                        Enviar avaliação
+                      </button>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })
+          )}
+        </ul>
       </main>
     </>
   );

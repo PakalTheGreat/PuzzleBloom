@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { createServiceRequest } from "@cwg/api";
 
+import { readDemoSessionClient } from "@/lib/demo/client-session";
+import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
 export function RequestServiceButton({
@@ -10,6 +12,7 @@ export function RequestServiceButton({
 }: {
   specialistProfileId: string;
 }) {
+  const { configured } = getPublicSupabaseEnv();
   const [mode, setMode] = useState<"remote" | "in_person">("remote");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -17,9 +20,23 @@ export function RequestServiceButton({
 
   async function submit() {
     setStatus(null);
+    if (!configured) {
+      const session = readDemoSessionClient();
+      if (!session) {
+        setStatus("Faça login para solicitar.");
+        return;
+      }
+      setLoading(true);
+      await new Promise((r) => setTimeout(r, 300));
+      setLoading(false);
+      setStatus(
+        `Solicitação demo enviada (${mode}) para ${specialistProfileId}. Acompanhe em /solicitacoes após entrar como especialista.`,
+      );
+      return;
+    }
     const client = createClient();
     if (!client) {
-      setStatus("Configure o Supabase no .env.");
+      setStatus("Cliente indisponível.");
       return;
     }
     const { data: auth } = await client.auth.getUser();

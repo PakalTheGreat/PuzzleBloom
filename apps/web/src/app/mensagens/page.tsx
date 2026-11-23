@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CONFIG_MISSING_MESSAGE_PT, listMyConversations } from "@cwg/api";
+import { listMyConversations } from "@cwg/api";
 
-import { ConfigBanner } from "@/components/ConfigBanner";
 import { SiteHeader } from "@/components/SiteHeader";
+import { readDemoSessionClient } from "@/lib/demo/client-session";
+import { DEMO_CONVERSATIONS } from "@/lib/demo/data";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
@@ -21,7 +22,16 @@ export default function MensagensPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!configured) return;
+    if (!configured) {
+      const session = readDemoSessionClient();
+      if (!session) {
+        setError("Faça login.");
+        return;
+      }
+      setError(null);
+      setRows([...DEMO_CONVERSATIONS]);
+      return;
+    }
     const client = createClient();
     if (!client) return;
     void (async () => {
@@ -38,15 +48,12 @@ export default function MensagensPage() {
 
   return (
     <>
-      <ConfigBanner />
       <SiteHeader />
       <main className="mx-auto max-w-2xl px-6 py-12">
         <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--cwg-green-deep)]">
           Mensagens
         </h1>
-        {!configured ? (
-          <p className="mt-8 text-sm">{CONFIG_MISSING_MESSAGE_PT}</p>
-        ) : error ? (
+        {error ? (
           <p className="mt-8 text-sm text-red-700">{error}</p>
         ) : (
           <ul className="mt-8 space-y-3">

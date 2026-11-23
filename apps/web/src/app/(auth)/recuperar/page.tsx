@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { passwordRecoverySchema } from "@cwg/validation";
-import { CONFIG_MISSING_MESSAGE_PT, requestPasswordRecovery } from "@cwg/api";
+import { requestPasswordRecovery } from "@cwg/api";
 
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
@@ -19,18 +19,20 @@ export default function RecoverPage() {
     e.preventDefault();
     setError(null);
     setInfo(null);
-    if (!configured) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
-      return;
-    }
     const parsed = passwordRecoverySchema.safeParse({ email });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "E-mail inválido");
       return;
     }
+    if (!configured) {
+      setInfo(
+        "Modo demonstração: use Entrar com ana@demo.cwg / carlos@demo.cwg / admin@demo.cwg (senha demo1234).",
+      );
+      return;
+    }
     const client = createClient();
     if (!client) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      setError("Cliente indisponível");
       return;
     }
     setLoading(true);

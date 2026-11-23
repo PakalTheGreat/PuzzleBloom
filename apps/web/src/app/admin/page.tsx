@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { CONFIG_MISSING_MESSAGE_PT } from "@cwg/api";
 
-import { ConfigBanner } from "@/components/ConfigBanner";
 import { SiteHeader } from "@/components/SiteHeader";
+import { readDemoSessionClient } from "@/lib/demo/client-session";
+import { DEMO_ADMIN_PENDING, DEMO_ADMIN_REPORTS } from "@/lib/demo/data";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
@@ -39,7 +39,16 @@ export default function AdminPage() {
 
   const reload = useCallback(async () => {
     if (!configured) {
-      setNote(CONFIG_MISSING_MESSAGE_PT);
+      const session = readDemoSessionClient();
+      if (!session?.roles.includes("admin")) {
+        setIsAdmin(false);
+        setNote("Acesso restrito a administradores.");
+        return;
+      }
+      setIsAdmin(true);
+      setNote("");
+      setPending([...DEMO_ADMIN_PENDING]);
+      setReports([...DEMO_ADMIN_REPORTS]);
       return;
     }
     const client = createClient();
@@ -89,6 +98,12 @@ export default function AdminPage() {
   async function decide(requestId: string, decision: "verified" | "rejected") {
     setError(null);
     setInfo(null);
+    if (!configured) {
+      setPending((prev) => prev.filter((row) => row.id !== requestId));
+      setInfo(`Solicitação ${decision} (demo).`);
+      setReason("");
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const {
@@ -147,6 +162,11 @@ export default function AdminPage() {
   }
 
   async function resolveReport(reportId: string, action: "dismissed" | "actioned") {
+    if (!configured) {
+      setReports((prev) => prev.filter((r) => r.id !== reportId));
+      setInfo(`Report ${action} (demo).`);
+      return;
+    }
     const client = createClient();
     if (!client) return;
     const {
@@ -181,14 +201,13 @@ export default function AdminPage() {
 
   return (
     <>
-      <ConfigBanner />
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-6 py-12">
         <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--cwg-green-deep)]">
           Admin
         </h1>
         <p className="mt-2 text-sm text-[var(--cwg-text-secondary)]">
-          Fila de verificação e moderação. RLS no backend.
+          Fila de verificação e moderação.
         </p>
         <div className="mt-4 flex gap-3 text-sm">
           <Link href="/admin/entitlements" className="text-[var(--cwg-green)]">
