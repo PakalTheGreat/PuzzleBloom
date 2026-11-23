@@ -46,3 +46,15 @@ join (
   on p.code = f.code
 on conflict (plan_id, feature_key) do update
   set feature_value = excluded.feature_value;
+
+-- Phase 2 service categories
+insert into public.service_categories (slug, name_pt, description_pt, sort_order) values
+  ('consultoria-tecnica', 'Consultoria técnica', 'Sessão de orientação profissional.', 10),
+  ('diagnostico-cultivo', 'Diagnóstico de cultivo', 'Avaliação técnica autorizada (sem endereço público).', 20),
+  ('treinamento', 'Treinamento', 'Capacitação de equipes.', 30),
+  ('compliance', 'Compliance', 'Apoio regulatório.', 40)
+on conflict (slug) do update
+  set name_pt = excluded.name_pt,
+      description_pt = excluded.description_pt,
+      sort_order = excluded.sort_order,
+      is_active = true;

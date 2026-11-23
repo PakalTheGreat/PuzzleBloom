@@ -1,6 +1,7 @@
 import type { ActiveRole, AppRole } from "@cwg/types";
 
 export * from "./tokens";
+export * from "./legal";
 
 export const APP_NAME = "CWG";
 export const APP_NAME_FULL = "Connect With Growers";
@@ -43,4 +44,14 @@ export function formatPhoneBr(phone: string): string {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   }
   return phone;
+}
+
+export function slugifyName(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
 }

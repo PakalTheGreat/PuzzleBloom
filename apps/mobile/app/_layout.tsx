@@ -4,6 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
 
+import { AuthProvider } from "@/context/AuthContext";
 import { RoleProvider } from "@/context/RoleContext";
 
 export { ErrorBoundary } from "expo-router";
@@ -34,14 +35,26 @@ export default function RootLayout() {
   }
 
   return (
-    <RoleProvider>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="modal"
-          options={{ presentation: "modal", title: "CWG" }}
-        />
-      </Stack>
-    </RoleProvider>
+    <AuthProvider>
+      <RoleProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="onboarding" options={{ title: "Onboarding" }} />
+          <Stack.Screen
+            name="specialist-edit"
+            options={{ title: "Perfil especialista" }}
+          />
+          <Stack.Screen
+            name="verification"
+            options={{ title: "Verificação" }}
+          />
+          <Stack.Screen
+            name="modal"
+            options={{ presentation: "modal", title: "CWG" }}
+          />
+        </Stack>
+      </RoleProvider>
+    </AuthProvider>
   );
 }

@@ -12,7 +12,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@cwg/shared": "workspace:*",
     "@cwg/types": "workspace:*",
+    "@cwg/validation": "workspace:*",
     "@supabase/supabase-js": "^2.50.0"
   },
   "devDependencies": {

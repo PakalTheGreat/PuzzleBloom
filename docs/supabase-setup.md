@@ -1,6 +1,15 @@
 # Supabase setup (CWG)
 
-## If a hosted project was NOT created by the agent
+## Local (preferred until cloud credentials exist)
+
+Requires Docker. On this cloud agent VM Docker was **not** available (`docker: command not found`), so migrations ship unapplied until a machine with Docker or a linked cloud project is used.
+
+```bash
+npx supabase start
+npx supabase db reset   # applies all migrations + seed/seed.sql
+```
+
+## Hosted project (when you have CLI login / SUPABASE_ACCESS_TOKEN)
 
 ```bash
 # 1) Login (browser)
@@ -18,13 +27,15 @@ npx supabase link --project-ref <PROJECT_REF>
 # 4) Push migrations
 npx supabase db push
 
-# 5) Seed specialties + plans
+# 5) Seed specialties + plans + service categories
 npx supabase db query --file supabase/seed/seed.sql
 # or: psql "$DATABASE_URL" -f supabase/seed/seed.sql
 ```
 
 List orgs: `npx supabase orgs list`  
 List projects: `npx supabase projects list`
+
+**Never invent** project URLs or anon/service keys — copy from the dashboard after create/link.
 
 ## Env after link
 
@@ -50,4 +61,7 @@ npx supabase db reset   # applies migrations + seed
 | `20260323120200_professional.sql` | specialties M:N, credentials, areas, portfolio |
 | `20260323120300_verification.sql` | verification tables + private `verification-docs` bucket |
 | `20260323120400_subscriptions_legal.sql` | plans/features/subscriptions + legal stubs |
-| `20260323120500_phase2plus_stubs_comments.sql` | deferred Phase 2+ notes |
+| `20260323120500_phase2plus_stubs_comments.sql` | historical placeholder (superseded) |
+| `20260323130000_phase2_services_reputation.sql` | favorites, requests, appointments, reviews |
+| `20260323140000_phase3_crm_messaging.sql` | CRM, messaging, notifications, private buckets |
+| `20260323150000_phase4_admin_lgpd.sql` | reports, status guards, entitlement RPC |
