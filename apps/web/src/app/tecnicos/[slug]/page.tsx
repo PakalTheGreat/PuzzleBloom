@@ -2,6 +2,8 @@ import Link from "next/link";
 import { CONFIG_MISSING_MESSAGE_PT, getSpecialistBySlug } from "@cwg/api";
 
 import { ConfigBanner } from "@/components/ConfigBanner";
+import { FavoriteButton } from "@/components/FavoriteButton";
+import { RequestServiceButton } from "@/components/RequestServiceButton";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -119,6 +121,8 @@ export default async function TecnicoPublicPage({ params }: PageProps) {
                 {String(profile.bio)}
               </p>
             ) : null}
+            <FavoriteButton specialistProfileId={String(profile.id)} />
+            <RequestServiceButton specialistProfileId={String(profile.id)} />
             <p className="mt-10 text-xs text-[var(--cwg-graphite-400)]">
               O selo de verificação não constitui endosso governamental. Sem
               endereços de cultivo.

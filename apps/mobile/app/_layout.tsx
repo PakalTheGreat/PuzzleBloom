@@ -50,6 +50,10 @@ export default function RootLayout() {
             options={{ title: "Verificação" }}
           />
           <Stack.Screen
+            name="appointment-detail"
+            options={{ title: "Agendamento" }}
+          />
+          <Stack.Screen
             name="modal"
             options={{ presentation: "modal", title: "CWG" }}
           />
