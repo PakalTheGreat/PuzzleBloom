@@ -1,0 +1,21 @@
+:root {
+  --cwg-green-deep: #0f3d2e;
+  --cwg-green: #1b5e45;
+  --cwg-green-muted: #2a7a5c;
+  --cwg-accent: #3d9b74;
+  --cwg-graphite-950: #0b0d10;
+  --cwg-graphite-900: #14181f;
+  --cwg-graphite-800: #1e2430;
+  --cwg-graphite-700: #2a3344;
+  --cwg-graphite-500: #5a6578;
+  --cwg-graphite-400: #8a93a3;
+  --cwg-graphite-100: #e8ebf0;
+  --cwg-graphite-50: #f4f6f8;
+  --cwg-surface-page: #f4f6f8;
+  --cwg-surface-card: #ffffff;
+  --cwg-text: #14181f;
+  --cwg-text-secondary: #5a6578;
+  --cwg-radius-md: 10px;
+  --cwg-font-sans: "DM Sans", "Segoe UI", sans-serif;
+  --cwg-font-display: "Fraunces", Georgia, serif;
+}
