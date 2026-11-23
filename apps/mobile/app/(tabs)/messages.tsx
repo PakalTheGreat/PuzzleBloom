@@ -1,5 +1,7 @@
+import { Link, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { FlatList, StyleSheet } from "react-native";
+import { FlatList, Pressable, StyleSheet } from "react-native";
+import { listMyConversations, listServiceRequestsForSpecialist } from "@cwg/api";
 
 import { Text, View } from "@/components/Themed";
 import { useActiveRole } from "@/context/RoleContext";
@@ -7,24 +9,20 @@ import { useAuth } from "@/context/AuthContext";
 import Colors from "@/constants/Colors";
 import { CONFIG_MISSING_MESSAGE_PT, getSupabase } from "@/lib/supabase";
 
-type Req = {
+type Conv = {
   id: string;
-  status: string;
-  message: string | null;
-  created_at: string;
+  latest: { body: string } | null;
+  members: Array<{ users?: { full_name?: string } | null }>;
 };
-
-type Msg = {
-  id: string;
-  body: string;
-  sent_at: string;
-};
+type Req = { id: string; status: string; message: string | null };
 
 export default function MessagesOrRequestsTab() {
+  const router = useRouter();
   const { activeRole } = useActiveRole();
   const { configured, user, me } = useAuth();
   const isGrower = activeRole === "grower";
-  const [rows, setRows] = useState<Array<Req | Msg>>([]);
+  const [convs, setConvs] = useState<Conv[]>([]);
+  const [reqs, setReqs] = useState<Req[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,35 +31,19 @@ export default function MessagesOrRequestsTab() {
     if (!client) return;
     void (async () => {
       if (isGrower) {
-        const { data: memberships } = await client
-          .from("conversation_members")
-          .select("conversation_id")
-          .eq("user_id", user.id);
-        const ids = (memberships ?? []).map((m) => m.conversation_id as string);
-        if (ids.length === 0) {
-          setRows([]);
-          return;
-        }
-        const { data, error: err } = await client
-          .from("messages")
-          .select("id, body, sent_at")
-          .in("conversation_id", ids)
-          .order("sent_at", { ascending: false })
-          .limit(40);
+        const { data, error: err } = await listMyConversations(client, user.id);
         if (err) setError(err.message);
-        else setRows((data as Msg[]) ?? []);
+        else setConvs((data as Conv[]) ?? []);
         return;
       }
       const specialist = me?.specialist as { id?: string } | null;
       if (!specialist?.id) return;
-      const { data, error: err } = await client
-        .from("service_requests")
-        .select("id, status, message, created_at")
-        .eq("specialist_profile_id", specialist.id)
-        .order("created_at", { ascending: false })
-        .limit(40);
+      const { data, error: err } = await listServiceRequestsForSpecialist(
+        client,
+        specialist.id,
+      );
       if (err) setError(err.message);
-      else setRows((data as Req[]) ?? []);
+      else setReqs((data as Req[]) ?? []);
     })();
   }, [configured, user, isGrower, me?.specialist]);
 
@@ -70,27 +52,46 @@ export default function MessagesOrRequestsTab() {
       <Text style={styles.title}>{isGrower ? "Mensagens" : "Solicitações"}</Text>
       {!configured ? <Text style={styles.warn}>{CONFIG_MISSING_MESSAGE_PT}</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <FlatList
-        data={rows}
-        keyExtractor={(i) => i.id}
-        ListEmptyComponent={
-          <Text style={styles.body}>
-            {isGrower ? "Sem mensagens." : "Sem solicitações."}
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              {"status" in item ? item.status : item.body.slice(0, 80)}
-            </Text>
-            <Text style={styles.meta}>
-              {"created_at" in item
-                ? new Date(item.created_at).toLocaleString("pt-BR")
-                : new Date(item.sent_at).toLocaleString("pt-BR")}
-            </Text>
-          </View>
-        )}
-      />
+      {isGrower ? (
+        <>
+          <Link href="/mensagens" style={styles.link}>
+            Abrir caixa de entrada
+          </Link>
+          <FlatList
+            data={convs}
+            keyExtractor={(i) => i.id}
+            ListEmptyComponent={<Text style={styles.body}>Sem mensagens.</Text>}
+            renderItem={({ item }) => (
+              <Pressable
+                style={styles.card}
+                onPress={() => router.push(`/mensagens/${item.id}`)}
+              >
+                <Text style={styles.cardTitle}>
+                  {item.members[0]?.users?.full_name || item.id.slice(0, 8)}
+                </Text>
+                <Text style={styles.meta}>{item.latest?.body || "—"}</Text>
+              </Pressable>
+            )}
+          />
+        </>
+      ) : (
+        <>
+          <Link href="/solicitacoes" style={styles.link}>
+            Gerenciar solicitações
+          </Link>
+          <FlatList
+            data={reqs}
+            keyExtractor={(i) => i.id}
+            ListEmptyComponent={<Text style={styles.body}>Sem solicitações.</Text>}
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>{item.status}</Text>
+                <Text style={styles.meta}>{item.message || "—"}</Text>
+              </View>
+            )}
+          />
+        </>
+      )}
     </View>
   );
 }
@@ -101,6 +102,7 @@ const styles = StyleSheet.create({
   warn: { color: "#92400E", marginBottom: 8, fontSize: 13 },
   error: { color: "#B91C1C", marginBottom: 8 },
   body: { color: Colors.light.muted },
+  link: { color: Colors.light.tint, fontWeight: "600", marginBottom: 8 },
   card: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#E8EBF0" },
   cardTitle: { fontWeight: "700", color: Colors.light.text },
   meta: { color: Colors.light.muted, marginTop: 4, fontSize: 13 },

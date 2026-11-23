@@ -58,3 +58,16 @@ on conflict (slug) do update
       description_pt = excluded.description_pt,
       sort_order = excluded.sort_order,
       is_active = true;
+
+-- Demo admin promotion (run AFTER creating a user via Auth signup):
+-- insert into public.user_roles (user_id, role)
+-- values ('<auth-user-uuid>', 'admin')
+-- on conflict (user_id, role) do nothing;
+--
+-- Optional free subscription for a specialist profile:
+-- insert into public.subscriptions (specialist_profile_id, plan_id, status, current_period_start, current_period_end)
+-- select sp.id, p.id, 'active', now(), now() + interval '30 days'
+-- from public.specialist_profiles sp
+-- cross join public.subscription_plans p
+-- where p.code = 'free' and sp.slug = '<slug>'
+-- on conflict do nothing;

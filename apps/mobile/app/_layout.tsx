@@ -45,14 +45,17 @@ export default function RootLayout() {
             name="specialist-edit"
             options={{ title: "Perfil especialista" }}
           />
-          <Stack.Screen
-            name="verification"
-            options={{ title: "Verificação" }}
-          />
+          <Stack.Screen name="verification" options={{ title: "Verificação" }} />
           <Stack.Screen
             name="appointment-detail"
             options={{ title: "Agendamento" }}
           />
+          <Stack.Screen name="solicitacoes" options={{ title: "Solicitações" }} />
+          <Stack.Screen name="calendario" options={{ title: "Calendário" }} />
+          <Stack.Screen name="crm/index" options={{ title: "CRM" }} />
+          <Stack.Screen name="crm/[id]" options={{ title: "Cliente" }} />
+          <Stack.Screen name="mensagens/index" options={{ title: "Mensagens" }} />
+          <Stack.Screen name="mensagens/[id]" options={{ title: "Conversa" }} />
           <Stack.Screen
             name="modal"
             options={{ presentation: "modal", title: "CWG" }}

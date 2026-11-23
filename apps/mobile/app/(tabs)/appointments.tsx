@@ -1,5 +1,7 @@
+import { Link, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { FlatList, StyleSheet } from "react-native";
+import { FlatList, Pressable, StyleSheet } from "react-native";
+import { listAppointmentsForUser, listCrmClients } from "@cwg/api";
 
 import { Text, View } from "@/components/Themed";
 import { useActiveRole } from "@/context/RoleContext";
@@ -7,18 +9,16 @@ import { useAuth } from "@/context/AuthContext";
 import Colors from "@/constants/Colors";
 import { CONFIG_MISSING_MESSAGE_PT, getSupabase } from "@/lib/supabase";
 
-type Row = {
-  id: string;
-  status: string;
-  starts_at: string;
-  mode: string;
-};
+type Appt = { id: string; status: string; starts_at: string; mode: string };
+type Client = { id: string; display_name: string; status: string };
 
 export default function AppointmentsTab() {
+  const router = useRouter();
   const { activeRole } = useActiveRole();
   const { configured, user, me } = useAuth();
   const isGrower = activeRole === "grower";
-  const [rows, setRows] = useState<Row[]>([]);
+  const [appts, setAppts] = useState<Appt[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,39 +27,16 @@ export default function AppointmentsTab() {
     if (!client) return;
     void (async () => {
       if (isGrower) {
-        const { data, error: err } = await client
-          .from("appointments")
-          .select("id, status, starts_at, mode")
-          .eq("grower_user_id", user.id)
-          .order("starts_at", { ascending: true })
-          .limit(40);
+        const { data, error: err } = await listAppointmentsForUser(client, user.id, null);
         if (err) setError(err.message);
-        else setRows((data as Row[]) ?? []);
+        else setAppts((data as Appt[]) ?? []);
         return;
       }
       const specialist = me?.specialist as { id?: string } | null;
-      if (!specialist?.id) {
-        setRows([]);
-        return;
-      }
-      const { data, error: err } = await client
-        .from("crm_clients")
-        .select("id, display_name, status")
-        .eq("specialist_profile_id", specialist.id)
-        .order("updated_at", { ascending: false })
-        .limit(40);
+      if (!specialist?.id) return;
+      const { data, error: err } = await listCrmClients(client, specialist.id);
       if (err) setError(err.message);
-      else
-        setRows(
-          ((data as Array<{ id: string; display_name: string; status: string }>) ?? []).map(
-            (c) => ({
-              id: c.id,
-              status: c.status,
-              starts_at: "",
-              mode: c.display_name,
-            }),
-          ),
-        );
+      else setClients((data as Client[]) ?? []);
     })();
   }, [configured, user, isGrower, me?.specialist]);
 
@@ -68,25 +45,57 @@ export default function AppointmentsTab() {
       <Text style={styles.title}>{isGrower ? "Agendamentos" : "Clientes (CRM)"}</Text>
       {!configured ? <Text style={styles.warn}>{CONFIG_MISSING_MESSAGE_PT}</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <FlatList
-        data={rows}
-        keyExtractor={(i) => i.id}
-        ListEmptyComponent={
-          <Text style={styles.body}>Lista vazia até haver dados no Supabase.</Text>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              {isGrower ? item.status : item.mode}
-            </Text>
-            <Text style={styles.meta}>
-              {isGrower
-                ? `${item.mode} · ${item.starts_at ? new Date(item.starts_at).toLocaleString("pt-BR") : ""}`
-                : item.status}
-            </Text>
-          </View>
-        )}
-      />
+      {isGrower ? (
+        <>
+          <Link href="/solicitacoes" style={styles.link}>
+            Minhas solicitações
+          </Link>
+          <FlatList
+            data={appts}
+            keyExtractor={(i) => i.id}
+            ListEmptyComponent={
+              <Text style={styles.body}>Lista vazia até haver dados no Supabase.</Text>
+            }
+            renderItem={({ item }) => (
+              <Pressable
+                style={styles.card}
+                onPress={() => router.push(`/appointment-detail?id=${item.id}`)}
+              >
+                <Text style={styles.cardTitle}>{item.status}</Text>
+                <Text style={styles.meta}>
+                  {item.mode} · {new Date(item.starts_at).toLocaleString("pt-BR")}
+                </Text>
+              </Pressable>
+            )}
+          />
+        </>
+      ) : (
+        <>
+          <Link href="/crm" style={styles.link}>
+            Abrir CRM completo
+          </Link>
+          <Link href="/calendario" style={styles.link}>
+            Calendário
+          </Link>
+          <Link href="/solicitacoes" style={styles.link}>
+            Solicitações
+          </Link>
+          <FlatList
+            data={clients}
+            keyExtractor={(i) => i.id}
+            ListEmptyComponent={<Text style={styles.body}>Sem clientes.</Text>}
+            renderItem={({ item }) => (
+              <Pressable
+                style={styles.card}
+                onPress={() => router.push(`/crm/${item.id}`)}
+              >
+                <Text style={styles.cardTitle}>{item.display_name}</Text>
+                <Text style={styles.meta}>{item.status}</Text>
+              </Pressable>
+            )}
+          />
+        </>
+      )}
     </View>
   );
 }
@@ -97,6 +106,7 @@ const styles = StyleSheet.create({
   warn: { color: "#92400E", marginBottom: 8, fontSize: 13 },
   error: { color: "#B91C1C", marginBottom: 8 },
   body: { color: Colors.light.muted },
+  link: { color: Colors.light.tint, fontWeight: "600", marginBottom: 8 },
   card: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#E8EBF0" },
   cardTitle: { fontWeight: "700", color: Colors.light.text },
   meta: { color: Colors.light.muted, marginTop: 4, fontSize: 13 },

@@ -56,8 +56,20 @@ export default function ProfileTab() {
               <Link href="/verification" style={styles.link}>
                 Enviar verificação
               </Link>
+              <Link href="/calendario" style={styles.link}>
+                Calendário
+              </Link>
+              <Link href="/crm" style={styles.link}>
+                CRM
+              </Link>
             </>
           ) : null}
+          <Link href="/mensagens" style={styles.link}>
+            Mensagens
+          </Link>
+          <Link href="/solicitacoes" style={styles.link}>
+            Solicitações
+          </Link>
           <Pressable onPress={() => void signOutLocal()} style={styles.secondary}>
             <Text style={styles.secondaryText}>Sair</Text>
           </Pressable>
