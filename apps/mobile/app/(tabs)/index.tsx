@@ -1,12 +1,14 @@
+import { Link } from "expo-router";
 import { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet } from "react-native";
 import { exploreSpecialists } from "@cwg/api";
+import { DEMO_STATS, exploreDemoSpecialists } from "@cwg/demo";
 
 import { Text, View } from "@/components/Themed";
 import { useActiveRole } from "@/context/RoleContext";
 import { useAuth } from "@/context/AuthContext";
 import Colors from "@/constants/Colors";
-import { CONFIG_MISSING_MESSAGE_PT, getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 type Row = {
   id: string;
@@ -20,20 +22,24 @@ type Row = {
 
 export default function HomeTab() {
   const { activeRole } = useActiveRole();
-  const { configured } = useAuth();
+  const { demoMode, user } = useAuth();
   const isGrower = activeRole === "grower";
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isGrower || !configured) return;
+    if (!isGrower) return;
+    if (demoMode) {
+      setRows(exploreDemoSpecialists() as unknown as Row[]);
+      return;
+    }
     const client = getSupabase();
     if (!client) return;
     void exploreSpecialists(client).then(({ data, error: err }) => {
       if (err) setError(err.message);
       else setRows((data as Row[] | null) ?? []);
     });
-  }, [isGrower, configured]);
+  }, [isGrower, demoMode]);
 
   return (
     <View style={styles.container}>
@@ -41,9 +47,6 @@ export default function HomeTab() {
       <Text style={styles.title}>
         {isGrower ? "Explorar especialistas" : "Dashboard do especialista"}
       </Text>
-      {!configured ? (
-        <Text style={styles.warn}>{CONFIG_MISSING_MESSAGE_PT}</Text>
-      ) : null}
       {isGrower ? (
         <>
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -51,10 +54,7 @@ export default function HomeTab() {
             data={rows}
             keyExtractor={(item) => item.id}
             ListEmptyComponent={
-              <Text style={styles.body}>
-                Nenhum especialista ainda. Com Supabase + seed, a lista aparece
-                aqui.
-              </Text>
+              <Text style={styles.body}>Nenhum especialista encontrado.</Text>
             }
             renderItem={({ item }) => (
               <Pressable style={styles.card}>
@@ -72,10 +72,34 @@ export default function HomeTab() {
           />
         </>
       ) : (
-        <Text style={styles.body}>
-          Resumo Phase 1+: edite o perfil público, envie verificação e (Phase 2+)
-          gerencie solicitações e agenda.
-        </Text>
+        <View>
+          {!user ? (
+            <Link href="/(auth)/entrar" style={styles.link}>
+              Entrar como especialista
+            </Link>
+          ) : (
+            <>
+              <Text style={styles.stat}>
+                Agendamentos no mês: {DEMO_STATS.appointmentsMonth}
+              </Text>
+              <Text style={styles.stat}>
+                Confirmação: {Math.round(DEMO_STATS.confirmedRate * 100)}%
+              </Text>
+              <Text style={styles.stat}>
+                Clientes ativos: {DEMO_STATS.activeClients}
+              </Text>
+              <Link href="/calendario" style={styles.link}>
+                Abrir calendário
+              </Link>
+              <Link href="/crm" style={styles.link}>
+                Abrir CRM
+              </Link>
+              <Link href="/solicitacoes" style={styles.link}>
+                Solicitações recebidas
+              </Link>
+            </>
+          )}
+        </View>
       )}
     </View>
   );
@@ -94,7 +118,6 @@ const styles = StyleSheet.create({
     color: Colors.light.brand,
     marginBottom: 12,
   },
-  warn: { color: "#92400E", marginBottom: 12, fontSize: 13 },
   error: { color: "#B91C1C", marginBottom: 8 },
   body: { fontSize: 16, lineHeight: 24, color: Colors.light.text, maxWidth: 420 },
   card: {
@@ -109,5 +132,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textTransform: "uppercase",
     color: Colors.light.muted,
+  },
+  stat: { fontSize: 16, color: Colors.light.text, marginBottom: 8 },
+  link: {
+    marginTop: 12,
+    color: Colors.light.tint,
+    fontWeight: "600",
+    fontSize: 16,
   },
 });

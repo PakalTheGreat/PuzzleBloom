@@ -12,11 +12,12 @@ import { signUpSchema } from "@cwg/validation";
 
 import { Text } from "@/components/Themed";
 import Colors from "@/constants/Colors";
-import { CONFIG_MISSING_MESSAGE_PT, getMobileEnv, getSupabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import { getSupabase } from "@/lib/supabase";
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const configured = getMobileEnv().configured;
+  const { demoMode, registerDemo } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,10 +28,6 @@ export default function SignUpScreen() {
   async function onSubmit() {
     setError(null);
     setInfo(null);
-    if (!configured) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
-      return;
-    }
     const parsed = signUpSchema.safeParse({
       email,
       password,
@@ -40,9 +37,16 @@ export default function SignUpScreen() {
       setError(parsed.error.issues[0]?.message ?? "Dados inválidos");
       return;
     }
+    if (demoMode) {
+      setLoading(true);
+      await registerDemo(parsed.data);
+      setLoading(false);
+      router.replace("/onboarding");
+      return;
+    }
     const client = getSupabase();
     if (!client) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      setError("Cliente indisponível");
       return;
     }
     setLoading(true);
@@ -62,6 +66,11 @@ export default function SignUpScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Cadastrar</Text>
+      {demoMode ? (
+        <Text style={styles.hint}>
+          Modo demonstração — após o cadastro você escolhe o papel no onboarding.
+        </Text>
+      ) : null}
       <TextInput
         style={styles.input}
         placeholder="Nome completo"
@@ -85,7 +94,7 @@ export default function SignUpScreen() {
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {info ? <Text style={styles.info}>{info}</Text> : null}
-      <Pressable style={styles.button} onPress={onSubmit} disabled={loading}>
+      <Pressable style={styles.button} onPress={() => void onSubmit()} disabled={loading}>
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -105,8 +114,9 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     color: Colors.light.brand,
-    marginBottom: 16,
+    marginBottom: 8,
   },
+  hint: { color: Colors.light.muted, marginBottom: 16, fontSize: 13 },
   input: {
     borderWidth: 1,
     borderColor: "#D4D8E0",

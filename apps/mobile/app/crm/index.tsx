@@ -8,30 +8,56 @@ import {
   View,
 } from "react-native";
 import { createCrmClient, listCrmClients } from "@cwg/api";
+import { DEMO_CRM_CLIENTS } from "@cwg/demo";
 
 import { Text } from "@/components/Themed";
 import Colors from "@/constants/Colors";
+import { useActiveRole } from "@/context/RoleContext";
 import { useAuth } from "@/context/AuthContext";
-import { CONFIG_MISSING_MESSAGE_PT, getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 type Row = { id: string; display_name: string; status: string };
 
 export default function CrmListScreen() {
   const router = useRouter();
-  const { configured, user, me } = useAuth();
+  const { activeRole } = useActiveRole();
+  const { demoMode, user, me } = useAuth();
   const specialist = me?.specialist as { id?: string } | null;
   const [rows, setRows] = useState<Row[]>([]);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!user) {
+      router.replace("/(auth)/entrar");
+      return;
+    }
+    if (activeRole !== "specialist") {
+      router.replace("/(tabs)");
+    }
+  }, [user, activeRole, router]);
+
   const reload = useCallback(async () => {
-    if (!configured || !specialist?.id) return;
+    const spId = specialist?.id ?? (demoMode ? "sp-ana" : null);
+    if (!spId) return;
+    if (demoMode) {
+      setRows(
+        DEMO_CRM_CLIENTS.filter((c) => c.specialist_profile_id === spId).map(
+          (c) => ({
+            id: c.id,
+            display_name: c.display_name,
+            status: c.status,
+          }),
+        ),
+      );
+      return;
+    }
     const client = getSupabase();
     if (!client) return;
-    const { data, error: err } = await listCrmClients(client, specialist.id);
+    const { data, error: err } = await listCrmClients(client, spId);
     if (err) setError(err.message);
     else setRows((data as Row[]) ?? []);
-  }, [configured, specialist?.id]);
+  }, [demoMode, specialist?.id]);
 
   useEffect(() => {
     void reload();
@@ -40,8 +66,8 @@ export default function CrmListScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>CRM</Text>
-      {!configured ? <Text style={styles.warn}>{CONFIG_MISSING_MESSAGE_PT}</Text> : null}
-      {!specialist?.id ? (
+      <Text style={styles.meta}>Privado do especialista.</Text>
+      {!specialist?.id && !demoMode ? (
         <Text style={styles.meta}>Ative o papel especialista.</Text>
       ) : (
         <>
@@ -55,8 +81,21 @@ export default function CrmListScreen() {
             <Pressable
               style={styles.button}
               onPress={async () => {
+                if (!name.trim()) return;
+                if (demoMode) {
+                  setRows((prev) => [
+                    {
+                      id: `crm-local-${Date.now()}`,
+                      display_name: name.trim(),
+                      status: "lead",
+                    },
+                    ...prev,
+                  ]);
+                  setName("");
+                  return;
+                }
                 const client = getSupabase();
-                if (!client || !specialist.id || !name.trim()) return;
+                if (!client || !specialist?.id) return;
                 const { error: err } = await createCrmClient(client, {
                   specialist_profile_id: specialist.id,
                   display_name: name.trim(),
@@ -97,9 +136,8 @@ export default function CrmListScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, backgroundColor: Colors.light.background },
-  title: { fontSize: 22, fontWeight: "700", color: Colors.light.brand, marginBottom: 12 },
-  warn: { color: "#92400E", marginBottom: 8, fontSize: 13 },
-  row: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  title: { fontSize: 22, fontWeight: "700", color: Colors.light.brand, marginBottom: 4 },
+  row: { flexDirection: "row", gap: 8, marginBottom: 12, marginTop: 12 },
   input: {
     borderWidth: 1,
     borderColor: "#D4D8E0",

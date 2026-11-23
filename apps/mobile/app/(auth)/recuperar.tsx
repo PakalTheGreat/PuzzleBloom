@@ -12,10 +12,11 @@ import { passwordRecoverySchema } from "@cwg/validation";
 
 import { Text } from "@/components/Themed";
 import Colors from "@/constants/Colors";
-import { CONFIG_MISSING_MESSAGE_PT, getMobileEnv, getSupabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import { getSupabase } from "@/lib/supabase";
 
 export default function RecoverScreen() {
-  const configured = getMobileEnv().configured;
+  const { demoMode } = useAuth();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -24,18 +25,20 @@ export default function RecoverScreen() {
   async function onSubmit() {
     setError(null);
     setInfo(null);
-    if (!configured) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
-      return;
-    }
     const parsed = passwordRecoverySchema.safeParse({ email });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "E-mail inválido");
       return;
     }
+    if (demoMode) {
+      setInfo(
+        "Modo demonstração: use Entrar com ana@demo.cwg / carlos@demo.cwg / admin@demo.cwg (senha demo1234).",
+      );
+      return;
+    }
     const client = getSupabase();
     if (!client) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      setError("Cliente indisponível");
       return;
     }
     setLoading(true);
@@ -64,7 +67,7 @@ export default function RecoverScreen() {
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {info ? <Text style={styles.info}>{info}</Text> : null}
-      <Pressable style={styles.button} onPress={onSubmit} disabled={loading}>
+      <Pressable style={styles.button} onPress={() => void onSubmit()} disabled={loading}>
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (

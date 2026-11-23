@@ -1,12 +1,14 @@
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet } from "react-native";
 import { listFavorites, toggleFavorite } from "@cwg/api";
+import { DEMO_APPOINTMENTS, DEMO_FAVORITES } from "@cwg/demo";
 
 import { Text, View } from "@/components/Themed";
 import { useActiveRole } from "@/context/RoleContext";
 import { useAuth } from "@/context/AuthContext";
 import Colors from "@/constants/Colors";
-import { CONFIG_MISSING_MESSAGE_PT, getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 type Fav = {
   id: string;
@@ -21,21 +23,44 @@ type Fav = {
 type Appt = { id: string; status: string; starts_at: string };
 
 export default function FavoritesOrAgendaTab() {
+  const router = useRouter();
   const { activeRole } = useActiveRole();
-  const { configured, user, me } = useAuth();
+  const { demoMode, user, me } = useAuth();
   const isGrower = activeRole === "grower";
   const [favs, setFavs] = useState<Fav[]>([]);
   const [agenda, setAgenda] = useState<Appt[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!user) {
+      router.replace("/(auth)/entrar");
+    }
+  }, [user, router]);
+
   const reload = useCallback(async () => {
-    if (!configured || !user) return;
+    if (!user) return;
+    if (demoMode) {
+      if (isGrower) setFavs([...DEMO_FAVORITES] as Fav[]);
+      else {
+        const spId = (me?.specialist as { id?: string } | null)?.id ?? "sp-ana";
+        setAgenda(
+          DEMO_APPOINTMENTS.filter((a) => a.specialist_profile_id === spId).map(
+            (a) => ({
+              id: a.id,
+              status: a.status,
+              starts_at: a.starts_at,
+            }),
+          ),
+        );
+      }
+      return;
+    }
     const client = getSupabase();
     if (!client) return;
     if (isGrower) {
       const { data, error: err } = await listFavorites(client, user.id);
       if (err) setError(err.message);
-      else setFavs((data as Fav[]) ?? []);
+      else setFavs((data as unknown as Fav[]) ?? []);
       return;
     }
     const specialist = me?.specialist as { id?: string } | null;
@@ -48,7 +73,7 @@ export default function FavoritesOrAgendaTab() {
       .limit(40);
     if (err) setError(err.message);
     else setAgenda((data as Appt[]) ?? []);
-  }, [configured, user, isGrower, me?.specialist]);
+  }, [demoMode, user, isGrower, me?.specialist]);
 
   useEffect(() => {
     void reload();
@@ -57,7 +82,6 @@ export default function FavoritesOrAgendaTab() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{isGrower ? "Favoritos" : "Agenda"}</Text>
-      {!configured ? <Text style={styles.warn}>{CONFIG_MISSING_MESSAGE_PT}</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {isGrower ? (
         <FlatList
@@ -75,6 +99,12 @@ export default function FavoritesOrAgendaTab() {
                 {sp?.id && user ? (
                   <Pressable
                     onPress={async () => {
+                      if (demoMode) {
+                        setFavs((prev) =>
+                          prev.filter((f) => f.specialist_profiles?.id !== sp.id),
+                        );
+                        return;
+                      }
                       const client = getSupabase();
                       if (!client) return;
                       await toggleFavorite(client, user.id, sp.id, false);
@@ -110,7 +140,6 @@ export default function FavoritesOrAgendaTab() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, backgroundColor: Colors.light.background },
   title: { fontSize: 22, fontWeight: "700", color: Colors.light.brand, marginBottom: 12 },
-  warn: { color: "#92400E", marginBottom: 8, fontSize: 13 },
   error: { color: "#B91C1C", marginBottom: 8 },
   body: { color: Colors.light.muted },
   card: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#E8EBF0" },

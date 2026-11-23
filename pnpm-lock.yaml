@@ -20,6 +20,9 @@ importers:
       '@cwg/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@cwg/demo':
+        specifier: workspace:*
+        version: link:../../packages/demo
       '@cwg/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -178,6 +181,12 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.50.0
         version: 2.119.2
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+
+  packages/demo:
     devDependencies:
       typescript:
         specifier: ^5.8.3

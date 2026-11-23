@@ -17,13 +17,15 @@ type RoleContextValue = {
   activeRole: ActiveRole;
   setActiveRoleLocal: (role: ActiveRole) => void;
   toggleRole: () => void;
+  canToggle: boolean;
 };
 
 const STORAGE_KEY = "cwg.active_role";
 const RoleContext = createContext<RoleContextValue | null>(null);
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const { user, me, refreshMe } = useAuth();
+  const { user, me, demoMode, demoSession, setDemoActiveRole, refreshMe } =
+    useAuth();
   const [activeRole, setActiveRoleState] = useState<ActiveRole>("grower");
 
   useEffect(() => {
@@ -35,32 +37,53 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (demoMode && demoSession) {
+      const role =
+        demoSession.activeRole === "admin"
+          ? "specialist"
+          : (demoSession.activeRole as ActiveRole);
+      if (role === "grower" || role === "specialist") {
+        setActiveRoleState(role);
+      }
+      return;
+    }
     const fromDb = (me?.user as { active_role?: ActiveRole } | null)?.active_role;
     if (fromDb === "grower" || fromDb === "specialist") {
       setActiveRoleState(fromDb);
     }
-  }, [me?.user]);
+  }, [demoMode, demoSession, me?.user]);
+
+  const canToggle = Boolean(
+    me?.roles?.includes("grower") && me?.roles?.includes("specialist"),
+  );
 
   const setActiveRoleLocal = useCallback(
     (role: ActiveRole) => {
       setActiveRoleState(role);
       void SecureStore.setItemAsync(STORAGE_KEY, role);
+      if (demoMode) {
+        void setDemoActiveRole(role);
+        return;
+      }
       const client = getSupabase();
       if (client && user) {
         void setActiveRole(client, user.id, role).then(() => refreshMe());
       }
     },
-    [user, refreshMe],
+    [demoMode, setDemoActiveRole, user, refreshMe],
   );
 
   const value = useMemo(
     () => ({
       activeRole,
       setActiveRoleLocal,
-      toggleRole: () =>
-        setActiveRoleLocal(activeRole === "grower" ? "specialist" : "grower"),
+      canToggle,
+      toggleRole: () => {
+        if (!canToggle) return;
+        setActiveRoleLocal(activeRole === "grower" ? "specialist" : "grower");
+      },
     }),
-    [activeRole, setActiveRoleLocal],
+    [activeRole, setActiveRoleLocal, canToggle],
   );
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;

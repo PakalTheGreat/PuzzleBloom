@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { listMessages, sendMessage } from "@cwg/api";
+import { DEMO_MESSAGES } from "@cwg/demo";
 
 import { Text } from "@/components/Themed";
 import Colors from "@/constants/Colors";
@@ -17,20 +18,41 @@ import { getSupabase } from "@/lib/supabase";
 type Msg = { id: string; body: string; sent_at: string; sender_id: string };
 
 export default function MensagemThreadScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
+  const { demoMode, user } = useAuth();
   const [rows, setRows] = useState<Msg[]>([]);
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!user) router.replace("/(auth)/entrar");
+  }, [user, router]);
+
   const reload = useCallback(async () => {
     if (!id) return;
+    if (demoMode) {
+      const demo = DEMO_MESSAGES[id] ?? [];
+      setRows(
+        demo.map((m) => ({
+          id: m.id,
+          body: m.body,
+          sent_at: m.sent_at,
+          sender_id: m.sender_label.includes("Carlos")
+            ? "user-carlos"
+            : m.sender_label.includes("Ana")
+              ? "user-ana"
+              : "user-bruno",
+        })),
+      );
+      return;
+    }
     const client = getSupabase();
     if (!client) return;
     const { data, error: err } = await listMessages(client, id);
     if (err) setError(err.message);
     else setRows((data as Msg[]) ?? []);
-  }, [id]);
+  }, [demoMode, id]);
 
   useEffect(() => {
     void reload();
@@ -47,7 +69,9 @@ export default function MensagemThreadScreen() {
           const mine = item.sender_id === user?.id;
           return (
             <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
-              <Text style={{ color: mine ? "#fff" : Colors.light.text }}>{item.body}</Text>
+              <Text style={{ color: mine ? "#fff" : Colors.light.text }}>
+                {item.body}
+              </Text>
             </View>
           );
         }}
@@ -63,6 +87,19 @@ export default function MensagemThreadScreen() {
           style={styles.button}
           onPress={async () => {
             if (!user || !id || !body.trim()) return;
+            if (demoMode) {
+              setRows((prev) => [
+                ...prev,
+                {
+                  id: `m-${Date.now()}`,
+                  body: body.trim(),
+                  sent_at: new Date().toISOString(),
+                  sender_id: user.id,
+                },
+              ]);
+              setBody("");
+              return;
+            }
             const client = getSupabase();
             if (!client) return;
             const { error: err } = await sendMessage(client, {
@@ -89,9 +126,10 @@ const styles = StyleSheet.create({
   error: { color: "#B91C1C", marginBottom: 8 },
   bubble: {
     maxWidth: "85%",
-    borderRadius: 12,
-    padding: 10,
-    marginVertical: 4,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 8,
   },
   mine: { alignSelf: "flex-end", backgroundColor: Colors.light.tint },
   theirs: {

@@ -16,10 +16,10 @@ import { Text } from "@/components/Themed";
 import Colors from "@/constants/Colors";
 import { useAuth } from "@/context/AuthContext";
 import { useActiveRole } from "@/context/RoleContext";
-import { CONFIG_MISSING_MESSAGE_PT, getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 export default function VerificationScreen() {
-  const { user, configured } = useAuth();
+  const { user, configured, demoMode } = useAuth();
   const { activeRole } = useActiveRole();
   const [legalCategory, setLegalCategory] = useState("");
   const [docType, setDocType] = useState("documento_identidade");
@@ -30,13 +30,21 @@ export default function VerificationScreen() {
   async function onSubmit() {
     setError(null);
     setInfo(null);
-    if (!configured || !user) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+    if (!user) {
+      setError("Faça login.");
+      return;
+    }
+    if (demoMode) {
+      setInfo("Solicitação de verificação registrada (demo).");
+      return;
+    }
+    if (!configured) {
+      setError("Cliente indisponível");
       return;
     }
     const client = getSupabase();
     if (!client) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      setError("Cliente indisponível");
       return;
     }
 

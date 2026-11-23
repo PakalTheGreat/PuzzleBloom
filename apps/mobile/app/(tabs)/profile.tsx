@@ -5,17 +5,19 @@ import { Text, View } from "@/components/Themed";
 import { useActiveRole } from "@/context/RoleContext";
 import { useAuth } from "@/context/AuthContext";
 import Colors from "@/constants/Colors";
-import { CONFIG_MISSING_MESSAGE_PT } from "@/lib/supabase";
 
 export default function ProfileTab() {
-  const { activeRole, toggleRole } = useActiveRole();
-  const { configured, user, me, signOutLocal } = useAuth();
+  const { activeRole, toggleRole, canToggle } = useActiveRole();
+  const { demoMode, user, me, signOutLocal } = useAuth();
+  const isSpecialist =
+    activeRole === "specialist" || Boolean(me?.roles?.includes("specialist"));
+  const isAdmin = Boolean(me?.roles?.includes("admin"));
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Perfil</Text>
-      {!configured ? (
-        <Text style={styles.warn}>{CONFIG_MISSING_MESSAGE_PT}</Text>
+      {demoMode ? (
+        <Text style={styles.meta}>Sessão de demonstração</Text>
       ) : null}
       <Text style={styles.body}>
         {user ? user.email : "Não autenticado"}
@@ -31,11 +33,14 @@ export default function ProfileTab() {
         {me?.onboardingComplete ? "ok" : "pendente"}
       </Text>
 
-      <Pressable onPress={toggleRole} style={styles.button}>
-        <Text style={styles.buttonText}>
-          Alternar para {activeRole === "grower" ? "Especialista" : "Cultivador"}
-        </Text>
-      </Pressable>
+      {canToggle ? (
+        <Pressable onPress={toggleRole} style={styles.button}>
+          <Text style={styles.buttonText}>
+            Alternar para{" "}
+            {activeRole === "grower" ? "Especialista" : "Cultivador"}
+          </Text>
+        </Pressable>
+      ) : null}
 
       {!user ? (
         <Link href="/(auth)/entrar" style={styles.link}>
@@ -48,7 +53,7 @@ export default function ProfileTab() {
               Concluir onboarding
             </Link>
           ) : null}
-          {activeRole === "specialist" || me?.roles?.includes("specialist") ? (
+          {isSpecialist ? (
             <>
               <Link href="/specialist-edit" style={styles.link}>
                 Editar perfil especialista
@@ -62,14 +67,27 @@ export default function ProfileTab() {
               <Link href="/crm" style={styles.link}>
                 CRM
               </Link>
+              <Link href="/solicitacoes" style={styles.link}>
+                Solicitações recebidas
+              </Link>
+            </>
+          ) : null}
+          {activeRole === "grower" ? (
+            <>
+              <Link href="/(tabs)/favorites" style={styles.link}>
+                Favoritos
+              </Link>
+              <Link href="/(tabs)/appointments" style={styles.link}>
+                Agendamentos
+              </Link>
             </>
           ) : null}
           <Link href="/mensagens" style={styles.link}>
             Mensagens
           </Link>
-          <Link href="/solicitacoes" style={styles.link}>
-            Solicitações
-          </Link>
+          {isAdmin ? (
+            <Text style={styles.meta}>Conta admin (demo)</Text>
+          ) : null}
           <Pressable onPress={() => void signOutLocal()} style={styles.secondary}>
             <Text style={styles.secondaryText}>Sair</Text>
           </Pressable>
@@ -87,7 +105,6 @@ const styles = StyleSheet.create({
     color: Colors.light.brand,
     marginBottom: 8,
   },
-  warn: { color: "#92400E", marginBottom: 12, fontSize: 13 },
   body: { fontSize: 16, color: Colors.light.text, marginBottom: 8 },
   meta: { fontSize: 13, color: Colors.light.muted, marginBottom: 16 },
   strong: { fontWeight: "700" },

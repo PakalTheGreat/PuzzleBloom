@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
@@ -12,12 +13,13 @@ import {
   listServiceRequestsForSpecialist,
   updateServiceRequestStatus,
 } from "@cwg/api";
+import { DEMO_REQUESTS } from "@cwg/demo";
 
 import { Text } from "@/components/Themed";
 import Colors from "@/constants/Colors";
 import { useActiveRole } from "@/context/RoleContext";
 import { useAuth } from "@/context/AuthContext";
-import { CONFIG_MISSING_MESSAGE_PT, getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 type Req = {
   id: string;
@@ -31,16 +33,37 @@ type Req = {
 };
 
 export default function SolicitacoesScreen() {
+  const router = useRouter();
   const { activeRole } = useActiveRole();
-  const { configured, user, me } = useAuth();
+  const { demoMode, user, me } = useAuth();
   const isSpecialist = activeRole === "specialist";
   const [rows, setRows] = useState<Req[]>([]);
   const [slot, setSlot] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!user) router.replace("/(auth)/entrar");
+  }, [user, router]);
+
   const reload = useCallback(async () => {
-    if (!configured || !user) return;
+    if (!user) return;
+    if (demoMode) {
+      const spId = (me?.specialist as { id?: string } | null)?.id ?? "sp-ana";
+      if (isSpecialist) {
+        setRows(
+          DEMO_REQUESTS.filter((r) => r.specialist_profile_id === spId) as Req[],
+        );
+      } else {
+        setRows(
+          DEMO_REQUESTS.filter(
+            (r) =>
+              r.grower_user_id === user.id || r.grower_user_id === "user-carlos",
+          ) as Req[],
+        );
+      }
+      return;
+    }
     const client = getSupabase();
     if (!client) return;
     if (isSpecialist) {
@@ -69,7 +92,7 @@ export default function SolicitacoesScreen() {
         setRows((data as Req[]) ?? []);
       }
     }
-  }, [configured, user, isSpecialist, me?.specialist]);
+  }, [demoMode, user, isSpecialist, me?.specialist]);
 
   useEffect(() => {
     void reload();
@@ -80,7 +103,6 @@ export default function SolicitacoesScreen() {
       <Text style={styles.title}>
         {isSpecialist ? "Solicitações recebidas" : "Solicitações enviadas"}
       </Text>
-      {!configured ? <Text style={styles.warn}>{CONFIG_MISSING_MESSAGE_PT}</Text> : null}
       {isSpecialist ? (
         <TextInput
           style={styles.input}
@@ -113,6 +135,15 @@ export default function SolicitacoesScreen() {
                 <Pressable
                   style={styles.button}
                   onPress={async () => {
+                    if (demoMode) {
+                      setRows((prev) =>
+                        prev.map((r) =>
+                          r.id === item.id ? { ...r, status: "accepted" } : r,
+                        ),
+                      );
+                      setInfo("Aceito (demo).");
+                      return;
+                    }
                     const client = getSupabase();
                     if (!client || !slot) {
                       setError("Informe o horário ISO.");
@@ -120,16 +151,19 @@ export default function SolicitacoesScreen() {
                     }
                     const start = new Date(slot);
                     const end = new Date(start.getTime() + 3600000);
-                    const { error: err } = await acceptRequestWithAppointment(client, {
-                      requestId: item.id,
-                      grower_user_id: item.grower_user_id,
-                      specialist_profile_id: item.specialist_profile_id,
-                      mode: item.mode as "remote" | "in_person",
-                      starts_at: start.toISOString(),
-                      ends_at: end.toISOString(),
-                      location_summary:
-                        item.mode === "remote" ? "Remoto" : "A combinar",
-                    });
+                    const { error: err } = await acceptRequestWithAppointment(
+                      client,
+                      {
+                        requestId: item.id,
+                        grower_user_id: item.grower_user_id,
+                        specialist_profile_id: item.specialist_profile_id,
+                        mode: item.mode as "remote" | "in_person",
+                        starts_at: start.toISOString(),
+                        ends_at: end.toISOString(),
+                        location_summary:
+                          item.mode === "remote" ? "Remoto" : "A combinar",
+                      },
+                    );
                     if (err) setError(err.message);
                     else setInfo("Aceito — agendamento criado.");
                     await reload();
@@ -140,6 +174,14 @@ export default function SolicitacoesScreen() {
                 <Pressable
                   style={styles.secondary}
                   onPress={async () => {
+                    if (demoMode) {
+                      setRows((prev) =>
+                        prev.map((r) =>
+                          r.id === item.id ? { ...r, status: "rejected" } : r,
+                        ),
+                      );
+                      return;
+                    }
                     const client = getSupabase();
                     if (!client) return;
                     await updateServiceRequestStatus(client, item.id, "rejected");
@@ -160,7 +202,6 @@ export default function SolicitacoesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, backgroundColor: Colors.light.background },
   title: { fontSize: 22, fontWeight: "700", color: Colors.light.brand, marginBottom: 12 },
-  warn: { color: "#92400E", marginBottom: 8, fontSize: 13 },
   input: {
     borderWidth: 1,
     borderColor: "#D4D8E0",

@@ -3,29 +3,51 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
 import { signInWithEmail } from "@cwg/api";
+import { DEMO_PERSONAS, type DemoPersona } from "@cwg/demo";
 import { signInSchema } from "@cwg/validation";
 
 import { Text } from "@/components/Themed";
 import Colors from "@/constants/Colors";
-import { CONFIG_MISSING_MESSAGE_PT, getMobileEnv, getSupabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import { getSupabase } from "@/lib/supabase";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const configured = getMobileEnv().configured;
+  const {
+    demoMode,
+    signInDemoPersona,
+    signInDemoCredentials,
+  } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  async function enterPersona(persona: DemoPersona) {
+    setLoading(true);
+    setError(null);
+    await signInDemoPersona(persona);
+    setLoading(false);
+    router.replace("/(tabs)");
+  }
+
   async function onSubmit() {
     setError(null);
-    if (!configured) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+    if (demoMode) {
+      setLoading(true);
+      const result = await signInDemoCredentials(email, password);
+      setLoading(false);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      router.replace("/(tabs)");
       return;
     }
     const parsed = signInSchema.safeParse({ email, password });
@@ -35,7 +57,7 @@ export default function LoginScreen() {
     }
     const client = getSupabase();
     if (!client) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      setError("Cliente indisponível");
       return;
     }
     setLoading(true);
@@ -49,28 +71,47 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Entrar</Text>
-      {!configured ? (
-        <Text style={styles.warn}>{CONFIG_MISSING_MESSAGE_PT}</Text>
+      {demoMode ? (
+        <Text style={styles.hint}>
+          Modo demonstração — escolha um perfil ou use as contas demo.
+        </Text>
       ) : null}
+
+      {demoMode ? (
+        <View style={styles.personas}>
+          {(Object.keys(DEMO_PERSONAS) as DemoPersona[]).map((key) => (
+            <Pressable
+              key={key}
+              style={styles.persona}
+              disabled={loading}
+              onPress={() => void enterPersona(key)}
+            >
+              <Text style={styles.personaTitle}>{DEMO_PERSONAS[key].label}</Text>
+              <Text style={styles.personaEmail}>{DEMO_PERSONAS[key].email}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
       <TextInput
         style={styles.input}
         autoCapitalize="none"
         keyboardType="email-address"
-        placeholder="E-mail"
+        placeholder={demoMode ? "ana@demo.cwg" : "E-mail"}
         value={email}
         onChangeText={setEmail}
       />
       <TextInput
         style={styles.input}
         secureTextEntry
-        placeholder="Senha"
+        placeholder={demoMode ? "demo1234" : "Senha"}
         value={password}
         onChangeText={setPassword}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Pressable style={styles.button} onPress={onSubmit} disabled={loading}>
+      <Pressable style={styles.button} onPress={() => void onSubmit()} disabled={loading}>
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -83,19 +124,29 @@ export default function LoginScreen() {
       <Link href="/(auth)/recuperar" style={styles.link}>
         Esqueci a senha
       </Link>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: Colors.light.background },
+  container: { padding: 24, backgroundColor: Colors.light.background, flexGrow: 1 },
   title: {
     fontSize: 28,
     fontWeight: "700",
     color: Colors.light.brand,
-    marginBottom: 16,
+    marginBottom: 8,
   },
-  warn: { color: "#92400E", marginBottom: 12, fontSize: 13 },
+  hint: { color: Colors.light.muted, marginBottom: 16, fontSize: 13, lineHeight: 18 },
+  personas: { gap: 8, marginBottom: 16 },
+  persona: {
+    borderWidth: 1,
+    borderColor: "#D4D8E0",
+    borderRadius: 10,
+    padding: 12,
+    backgroundColor: "#fff",
+  },
+  personaTitle: { fontWeight: "700", color: Colors.light.text },
+  personaEmail: { color: Colors.light.muted, marginTop: 2, fontSize: 13 },
   input: {
     borderWidth: 1,
     borderColor: "#D4D8E0",

@@ -14,10 +14,10 @@ import { specialistProfileSchema } from "@cwg/validation";
 import { Text } from "@/components/Themed";
 import Colors from "@/constants/Colors";
 import { useAuth } from "@/context/AuthContext";
-import { CONFIG_MISSING_MESSAGE_PT, getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 export default function SpecialistEditScreen() {
-  const { me, configured, refreshMe } = useAuth();
+  const { me, configured, demoMode, refreshMe } = useAuth();
   const specialist = me?.specialist as {
     id: string;
     slug: string;
@@ -64,12 +64,8 @@ export default function SpecialistEditScreen() {
   async function onSave() {
     setError(null);
     setInfo(null);
-    if (!configured || !specialist) {
-      setError(
-        !specialist
-          ? "Ative o papel especialista no onboarding."
-          : CONFIG_MISSING_MESSAGE_PT,
-      );
+    if (!specialist) {
+      setError("Ative o papel especialista no onboarding.");
       return;
     }
     const parsed = specialistProfileSchema.safeParse({
@@ -87,9 +83,17 @@ export default function SpecialistEditScreen() {
       setError(parsed.error.issues[0]?.message ?? "Dados inválidos");
       return;
     }
+    if (demoMode) {
+      setInfo("Perfil atualizado (demo).");
+      return;
+    }
+    if (!configured) {
+      setError("Cliente indisponível");
+      return;
+    }
     const client = getSupabase();
     if (!client) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      setError("Cliente indisponível");
       return;
     }
     setLoading(true);

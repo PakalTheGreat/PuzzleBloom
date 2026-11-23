@@ -8,7 +8,7 @@ import type { RoleIntent } from "@cwg/validation";
 import { Text } from "@/components/Themed";
 import Colors from "@/constants/Colors";
 import { useAuth } from "@/context/AuthContext";
-import { CONFIG_MISSING_MESSAGE_PT, getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 const INTENTS: { id: RoleIntent; title: string }[] = [
   { id: "find", title: "Encontrar especialistas" },
@@ -18,7 +18,12 @@ const INTENTS: { id: RoleIntent; title: string }[] = [
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { user, configured, refreshMe } = useAuth();
+  const {
+    user,
+    demoMode,
+    completeDemoOnboarding,
+    refreshMe,
+  } = useAuth();
   const [step, setStep] = useState<"legal" | "roles">("legal");
   const [age, setAge] = useState(false);
   const [terms, setTerms] = useState(false);
@@ -33,13 +38,21 @@ export default function OnboardingScreen() {
       setError("Confirme idade e aceite Termos e Privacidade.");
       return;
     }
-    if (!configured || !user) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+    if (demoMode) {
+      if (!user) {
+        router.replace("/(auth)/entrar");
+        return;
+      }
+      setStep("roles");
+      return;
+    }
+    if (!user) {
+      router.replace("/(auth)/entrar");
       return;
     }
     const client = getSupabase();
     if (!client) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      setError("Cliente indisponível");
       return;
     }
     setLoading(true);
@@ -54,13 +67,20 @@ export default function OnboardingScreen() {
 
   async function finishRoles() {
     setError(null);
-    if (!configured || !user) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+    if (demoMode) {
+      setLoading(true);
+      await completeDemoOnboarding(intent);
+      setLoading(false);
+      router.replace("/(tabs)");
+      return;
+    }
+    if (!user) {
+      router.replace("/(auth)/entrar");
       return;
     }
     const client = getSupabase();
     if (!client) {
-      setError(CONFIG_MISSING_MESSAGE_PT);
+      setError("Cliente indisponível");
       return;
     }
     setLoading(true);
@@ -97,7 +117,11 @@ export default function OnboardingScreen() {
             <Text>{privacy ? "☑" : "☐"} Aceito Privacidade</Text>
           </Pressable>
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Pressable style={styles.button} onPress={finishLegal} disabled={loading}>
+          <Pressable
+            style={styles.button}
+            onPress={() => void finishLegal()}
+            disabled={loading}
+          >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -120,7 +144,11 @@ export default function OnboardingScreen() {
             </Pressable>
           ))}
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Pressable style={styles.button} onPress={finishRoles} disabled={loading}>
+          <Pressable
+            style={styles.button}
+            onPress={() => void finishRoles()}
+            disabled={loading}
+          >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (

@@ -2,12 +2,13 @@ import { Link, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet } from "react-native";
 import { listMyConversations, listServiceRequestsForSpecialist } from "@cwg/api";
+import { DEMO_CONVERSATIONS, DEMO_REQUESTS } from "@cwg/demo";
 
 import { Text, View } from "@/components/Themed";
 import { useActiveRole } from "@/context/RoleContext";
 import { useAuth } from "@/context/AuthContext";
 import Colors from "@/constants/Colors";
-import { CONFIG_MISSING_MESSAGE_PT, getSupabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 type Conv = {
   id: string;
@@ -19,14 +20,33 @@ type Req = { id: string; status: string; message: string | null };
 export default function MessagesOrRequestsTab() {
   const router = useRouter();
   const { activeRole } = useActiveRole();
-  const { configured, user, me } = useAuth();
+  const { demoMode, user, me } = useAuth();
   const isGrower = activeRole === "grower";
   const [convs, setConvs] = useState<Conv[]>([]);
   const [reqs, setReqs] = useState<Req[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!configured || !user) return;
+    if (!user) {
+      router.replace("/(auth)/entrar");
+      return;
+    }
+    if (demoMode) {
+      if (isGrower) setConvs([...DEMO_CONVERSATIONS] as Conv[]);
+      else {
+        const spId = (me?.specialist as { id?: string } | null)?.id ?? "sp-ana";
+        setReqs(
+          DEMO_REQUESTS.filter((r) => r.specialist_profile_id === spId).map(
+            (r) => ({
+              id: r.id,
+              status: r.status,
+              message: r.message,
+            }),
+          ),
+        );
+      }
+      return;
+    }
     const client = getSupabase();
     if (!client) return;
     void (async () => {
@@ -45,12 +65,11 @@ export default function MessagesOrRequestsTab() {
       if (err) setError(err.message);
       else setReqs((data as Req[]) ?? []);
     })();
-  }, [configured, user, isGrower, me?.specialist]);
+  }, [demoMode, user, isGrower, me?.specialist, router]);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{isGrower ? "Mensagens" : "Solicitações"}</Text>
-      {!configured ? <Text style={styles.warn}>{CONFIG_MISSING_MESSAGE_PT}</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {isGrower ? (
         <>
@@ -99,7 +118,6 @@ export default function MessagesOrRequestsTab() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, backgroundColor: Colors.light.background },
   title: { fontSize: 22, fontWeight: "700", color: Colors.light.brand, marginBottom: 12 },
-  warn: { color: "#92400E", marginBottom: 8, fontSize: 13 },
   error: { color: "#B91C1C", marginBottom: 8 },
   body: { color: Colors.light.muted },
   link: { color: Colors.light.tint, fontWeight: "600", marginBottom: 8 },

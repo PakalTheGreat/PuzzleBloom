@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@cwg/api": "workspace:*",
+    "@cwg/demo": "workspace:*",
     "@cwg/shared": "workspace:*",
     "@cwg/types": "workspace:*",
     "@cwg/validation": "workspace:*",
