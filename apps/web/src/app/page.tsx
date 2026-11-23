@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { PlayStoreButton } from "@/components/PlayStoreButton";
+import { SiteFooter } from "@/components/SiteFooter";
+
 export default function HomePage() {
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -24,9 +27,9 @@ export default function HomePage() {
           Connect With Growers
         </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg">
-          Encontre especialistas técnicos verificados — ou ofereça seus
-          serviços profissionais. Mobile-first, reputação real, sem marketplace
-          de produtos.
+          Encontre especialistas técnicos verificados — com prioridade para
+          atendimento presencial perto de você. Mobile-first, reputação real,
+          sem marketplace de produtos.
         </p>
         <div className="mt-10 flex flex-wrap gap-3">
           <Link
@@ -35,17 +38,12 @@ export default function HomePage() {
           >
             Ver especialistas
           </Link>
+          <PlayStoreButton variant="light" />
           <Link
             href="/entrar"
             className="rounded-[10px] border border-white/25 px-5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10"
           >
-            Entrar na demo
-          </Link>
-          <Link
-            href="/cadastrar"
-            className="rounded-[10px] border border-white/25 px-5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10"
-          >
-            Criar conta
+            Entrar
           </Link>
         </div>
       </div>
@@ -61,10 +59,13 @@ export default function HomePage() {
           <p className="mt-3 text-[var(--cwg-text-secondary)]">
             CWG conecta cultivadores e organizações legalmente autorizados a
             especialistas técnicos no Brasil. Agenda, CRM e reputação baseada em
-            confirmações mútuas — nunca ranking pago disfarçado.
+            confirmações mútuas — nunca ranking pago disfarçado. Localização
+            pública mostra apenas área de serviço aproximada, nunca endereço de
+            cultivo.
           </p>
         </div>
       </section>
+      <SiteFooter />
     </main>
   );
 }

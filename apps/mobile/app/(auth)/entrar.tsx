@@ -12,9 +12,15 @@ import { signInWithEmail } from "@cwg/api";
 import { DEMO_PERSONAS, type DemoPersona } from "@cwg/demo";
 import { signInSchema } from "@cwg/validation";
 
+import { GoogleAuthButton } from "@/components/GoogleAuthButton";
+import { LegalAuthGate } from "@/components/LegalAuthGate";
 import { Text } from "@/components/Themed";
 import Colors from "@/constants/Colors";
 import { useAuth } from "@/context/AuthContext";
+import {
+  readCultivationAuth,
+  toDemoLegalAcceptance,
+} from "@/lib/legal-auth";
 import { getSupabase } from "@/lib/supabase";
 
 export default function LoginScreen() {
@@ -23,16 +29,23 @@ export default function LoginScreen() {
     demoMode,
     signInDemoPersona,
     signInDemoCredentials,
+    attachLegalToDemo,
   } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  async function stampLegal() {
+    const legal = await readCultivationAuth();
+    if (legal) await attachLegalToDemo(toDemoLegalAcceptance(legal));
+  }
+
   async function enterPersona(persona: DemoPersona) {
     setLoading(true);
     setError(null);
     await signInDemoPersona(persona);
+    await stampLegal();
     setLoading(false);
     router.replace("/(tabs)");
   }
@@ -42,11 +55,13 @@ export default function LoginScreen() {
     if (demoMode) {
       setLoading(true);
       const result = await signInDemoCredentials(email, password);
-      setLoading(false);
       if (result.error) {
+        setLoading(false);
         setError(result.error);
         return;
       }
+      await stampLegal();
+      setLoading(false);
       router.replace("/(tabs)");
       return;
     }
@@ -70,61 +85,69 @@ export default function LoginScreen() {
     router.replace("/(tabs)");
   }
 
+  const personaKeys = (Object.keys(DEMO_PERSONAS) as DemoPersona[]).filter(
+    (k) => k !== "google",
+  );
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Entrar</Text>
-      {demoMode ? (
-        <Text style={styles.hint}>
-          Modo demonstração — escolha um perfil ou use as contas demo.
-        </Text>
-      ) : null}
+    <LegalAuthGate>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Entrar</Text>
+        {demoMode ? (
+          <Text style={styles.hint}>
+            Modo demonstração — escolha um perfil, Google demo ou contas demo.
+          </Text>
+        ) : null}
 
-      {demoMode ? (
-        <View style={styles.personas}>
-          {(Object.keys(DEMO_PERSONAS) as DemoPersona[]).map((key) => (
-            <Pressable
-              key={key}
-              style={styles.persona}
-              disabled={loading}
-              onPress={() => void enterPersona(key)}
-            >
-              <Text style={styles.personaTitle}>{DEMO_PERSONAS[key].label}</Text>
-              <Text style={styles.personaEmail}>{DEMO_PERSONAS[key].email}</Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
+        <GoogleAuthButton />
 
-      <TextInput
-        style={styles.input}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        placeholder={demoMode ? "ana@demo.cwg" : "E-mail"}
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        secureTextEntry
-        placeholder={demoMode ? "demo1234" : "Senha"}
-        value={password}
-        onChangeText={setPassword}
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Pressable style={styles.button} onPress={() => void onSubmit()} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Entrar</Text>
-        )}
-      </Pressable>
-      <Link href="/(auth)/cadastrar" style={styles.link}>
-        Criar conta
-      </Link>
-      <Link href="/(auth)/recuperar" style={styles.link}>
-        Esqueci a senha
-      </Link>
-    </ScrollView>
+        {demoMode ? (
+          <View style={styles.personas}>
+            {personaKeys.map((key) => (
+              <Pressable
+                key={key}
+                style={styles.persona}
+                disabled={loading}
+                onPress={() => void enterPersona(key)}
+              >
+                <Text style={styles.personaTitle}>{DEMO_PERSONAS[key].label}</Text>
+                <Text style={styles.personaEmail}>{DEMO_PERSONAS[key].email}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+
+        <TextInput
+          style={styles.input}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          placeholder={demoMode ? "ana@demo.cwg" : "E-mail"}
+          value={email}
+          onChangeText={setEmail}
+        />
+        <TextInput
+          style={styles.input}
+          secureTextEntry
+          placeholder={demoMode ? "demo1234" : "Senha"}
+          value={password}
+          onChangeText={setPassword}
+        />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Pressable style={styles.button} onPress={() => void onSubmit()} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Entrar</Text>
+          )}
+        </Pressable>
+        <Link href="/(auth)/cadastrar" style={styles.link}>
+          Criar conta
+        </Link>
+        <Link href="/(auth)/recuperar" style={styles.link}>
+          Esqueci a senha
+        </Link>
+      </ScrollView>
+    </LegalAuthGate>
   );
 }
 
@@ -137,7 +160,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   hint: { color: Colors.light.muted, marginBottom: 16, fontSize: 13, lineHeight: 18 },
-  personas: { gap: 8, marginBottom: 16 },
+  personas: { gap: 8, marginBottom: 16, marginTop: 8 },
   persona: {
     borderWidth: 1,
     borderColor: "#D4D8E0",

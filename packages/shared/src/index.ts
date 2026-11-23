@@ -2,6 +2,7 @@ import type { ActiveRole, AppRole } from "@cwg/types";
 
 export * from "./tokens";
 export * from "./legal";
+export * from "./geo";
 
 export const APP_NAME = "CWG";
 export const APP_NAME_FULL = "Connect With Growers";

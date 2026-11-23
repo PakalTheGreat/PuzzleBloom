@@ -3,21 +3,27 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
-  View,
 } from "react-native";
 import { signUpWithEmail } from "@cwg/api";
 import { signUpSchema } from "@cwg/validation";
 
+import { GoogleAuthButton } from "@/components/GoogleAuthButton";
+import { LegalAuthGate } from "@/components/LegalAuthGate";
 import { Text } from "@/components/Themed";
 import Colors from "@/constants/Colors";
 import { useAuth } from "@/context/AuthContext";
+import {
+  readCultivationAuth,
+  toDemoLegalAcceptance,
+} from "@/lib/legal-auth";
 import { getSupabase } from "@/lib/supabase";
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const { demoMode, registerDemo } = useAuth();
+  const { demoMode, registerDemo, attachLegalToDemo } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,6 +46,8 @@ export default function SignUpScreen() {
     if (demoMode) {
       setLoading(true);
       await registerDemo(parsed.data);
+      const legal = await readCultivationAuth();
+      if (legal) await attachLegalToDemo(toDemoLegalAcceptance(legal));
       setLoading(false);
       router.replace("/onboarding");
       return;
@@ -64,52 +72,55 @@ export default function SignUpScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Cadastrar</Text>
-      {demoMode ? (
-        <Text style={styles.hint}>
-          Modo demonstração — após o cadastro você escolhe o papel no onboarding.
-        </Text>
-      ) : null}
-      <TextInput
-        style={styles.input}
-        placeholder="Nome completo"
-        value={fullName}
-        onChangeText={setFullName}
-      />
-      <TextInput
-        style={styles.input}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        placeholder="E-mail"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        secureTextEntry
-        placeholder="Senha (mín. 8)"
-        value={password}
-        onChangeText={setPassword}
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {info ? <Text style={styles.info}>{info}</Text> : null}
-      <Pressable style={styles.button} onPress={() => void onSubmit()} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Criar conta</Text>
-        )}
-      </Pressable>
-      <Link href="/(auth)/entrar" style={styles.link}>
-        Já tenho conta
-      </Link>
-    </View>
+    <LegalAuthGate>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Cadastrar</Text>
+        {demoMode ? (
+          <Text style={styles.hint}>
+            Modo demonstração — Google demo ou e-mail; depois o onboarding.
+          </Text>
+        ) : null}
+        <GoogleAuthButton />
+        <TextInput
+          style={styles.input}
+          placeholder="Nome completo"
+          value={fullName}
+          onChangeText={setFullName}
+        />
+        <TextInput
+          style={styles.input}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          placeholder="E-mail"
+          value={email}
+          onChangeText={setEmail}
+        />
+        <TextInput
+          style={styles.input}
+          secureTextEntry
+          placeholder="Senha (mín. 8)"
+          value={password}
+          onChangeText={setPassword}
+        />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {info ? <Text style={styles.info}>{info}</Text> : null}
+        <Pressable style={styles.button} onPress={() => void onSubmit()} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Criar conta</Text>
+          )}
+        </Pressable>
+        <Link href="/(auth)/entrar" style={styles.link}>
+          Já tenho conta
+        </Link>
+      </ScrollView>
+    </LegalAuthGate>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: Colors.light.background },
+  container: { flexGrow: 1, padding: 24, backgroundColor: Colors.light.background },
   title: {
     fontSize: 28,
     fontWeight: "700",

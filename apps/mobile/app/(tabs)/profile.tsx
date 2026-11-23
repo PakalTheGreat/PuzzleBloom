@@ -1,6 +1,7 @@
 import { Link } from "expo-router";
 import { Pressable, StyleSheet } from "react-native";
 
+import { PlayStoreButton } from "@/components/PlayStoreButton";
 import { Text, View } from "@/components/Themed";
 import { useActiveRole } from "@/context/RoleContext";
 import { useAuth } from "@/context/AuthContext";
@@ -19,6 +20,7 @@ export default function ProfileTab() {
       {demoMode ? (
         <Text style={styles.meta}>Sessão de demonstração</Text>
       ) : null}
+      <PlayStoreButton />
       <Text style={styles.body}>
         {user ? user.email : "Não autenticado"}
       </Text>

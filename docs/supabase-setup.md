@@ -44,6 +44,19 @@ Copy project URL + anon key into root `.env` (see `.env.example`):
 - `NEXT_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 - Keep `SUPABASE_SERVICE_ROLE_KEY` server-only
+- `NEXT_PUBLIC_PLAY_STORE_URL` / `EXPO_PUBLIC_PLAY_STORE_URL` — Google Play listing (placeholder `br.com.cwg.app` until the real app id exists)
+- `NEXT_PUBLIC_SITE_URL` — used as OAuth redirect base (`/auth/callback`)
+
+## Google OAuth (login / signup)
+
+1. Supabase Dashboard → **Authentication → Providers → Google** → enable.
+2. Create OAuth credentials in Google Cloud Console (Web application).
+3. Authorized redirect URI (required): `{SUPABASE_URL}/auth/v1/callback`
+4. Paste Client ID + Client Secret into the Supabase Google provider form.
+5. App callback after Supabase exchange: `{NEXT_PUBLIC_SITE_URL}/auth/callback` (web) / Expo deep link `cwg://auth/callback` when native.
+6. Without Supabase env, the apps run **demo mode** and simulate Google via a consent step + `google` persona (`google.user@demo.cwg`).
+
+Pre-auth **declaração de autorização aplicável** is required before email or Google auth. In real mode, acceptance is stored in `terms_acceptances` with `document_version = LEGAL_VERSIONS.cultivationAuthorization` (`2026-11-23`). The platform does **not** validate licenses.
 
 ## Local stack (optional)
 
@@ -65,3 +78,4 @@ npx supabase db reset   # applies migrations + seed
 | `20260323130000_phase2_services_reputation.sql` | favorites, requests, appointments, reviews |
 | `20260323140000_phase3_crm_messaging.sql` | CRM, messaging, notifications, private buckets |
 | `20260323150000_phase4_admin_lgpd.sql` | reports, status guards, entitlement RPC |
+| `20260323160000_specialist_service_coords.sql` | coarse `service_lat` / `service_lng` for nearby discovery |

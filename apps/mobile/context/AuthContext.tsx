@@ -48,6 +48,11 @@ type AuthContextValue = {
     password: string;
     full_name: string;
   }) => Promise<void>;
+  attachLegalToDemo: (acceptance: {
+    document: "cultivation_authorization" | "terms" | "privacy";
+    documentVersion: string;
+    acceptedAt: string;
+  }) => Promise<void>;
   completeDemoOnboarding: (intent: RoleIntent) => Promise<void>;
   setDemoActiveRole: (role: AppRole) => Promise<void>;
   refreshMe: () => Promise<void>;
@@ -191,10 +196,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         onboardingComplete: false,
         specialistProfileId: null,
         growerProfileId: null,
+        authProvider: "email",
       };
       await applyDemo(next);
     },
     [applyDemo],
+  );
+
+  const attachLegalToDemo = useCallback(
+    async (acceptance: {
+      document: "cultivation_authorization" | "terms" | "privacy";
+      documentVersion: string;
+      acceptedAt: string;
+    }) => {
+      const current = demoSession ?? (await loadDemoSession());
+      if (!current) return;
+      const existing = current.legalAcceptances ?? [];
+      const withoutDup = existing.filter(
+        (a) =>
+          !(
+            a.document === acceptance.document &&
+            a.documentVersion === acceptance.documentVersion
+          ),
+      );
+      await applyDemo({
+        ...current,
+        legalAcceptances: [...withoutDup, acceptance],
+      });
+    },
+    [applyDemo, demoSession],
   );
 
   const completeDemoOnboarding = useCallback(
@@ -264,6 +294,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInDemoPersona,
       signInDemoCredentials,
       registerDemo,
+      attachLegalToDemo,
       completeDemoOnboarding,
       setDemoActiveRole,
       refreshMe,
@@ -280,6 +311,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInDemoPersona,
       signInDemoCredentials,
       registerDemo,
+      attachLegalToDemo,
       completeDemoOnboarding,
       setDemoActiveRole,
       refreshMe,

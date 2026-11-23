@@ -1,5 +1,8 @@
+import { sortByDistance } from "@cwg/shared";
+
 import type { AppRole, DemoSession } from "./types";
 
+/** Coarse service-location coords (city centroid) — never cultivation street addresses. */
 export const DEMO_SPECIALISTS = [
   {
     id: "sp-ana",
@@ -10,6 +13,8 @@ export const DEMO_SPECIALISTS = [
     city: "Curitiba",
     state: "PR",
     region: "Sul",
+    service_lat: -25.4284,
+    service_lng: -49.2733,
     verification_status: "verified",
     offers_remote: true,
     offers_in_person: true,
@@ -28,6 +33,8 @@ export const DEMO_SPECIALISTS = [
     city: "São Paulo",
     state: "SP",
     region: "Sudeste",
+    service_lat: -23.5505,
+    service_lng: -46.6333,
     verification_status: "verified",
     offers_remote: true,
     offers_in_person: false,
@@ -46,11 +53,50 @@ export const DEMO_SPECIALISTS = [
     city: "Florianópolis",
     state: "SC",
     region: "Sul",
+    service_lat: -27.5954,
+    service_lng: -48.548,
     verification_status: "pending_review",
     offers_remote: true,
     offers_in_person: true,
     users: { full_name: "Especialista Exemplo", avatar_url: null },
     specialist_specialties: [{ specialties: { name_pt: "Consultoria geral" } }],
+  },
+  {
+    id: "sp-carla",
+    user_id: "user-carla",
+    slug: "carla-presencial-pr",
+    headline: "Visitas técnicas e layout de sala (presencial)",
+    bio: "Atendimento presencial prioritário na região metropolitana de Curitiba. Local de serviço aproximado (cidade) — sem endereço de cultivo.",
+    city: "Curitiba",
+    state: "PR",
+    region: "Sul",
+    service_lat: -25.4411,
+    service_lng: -49.2769,
+    verification_status: "verified",
+    offers_remote: false,
+    offers_in_person: true,
+    users: { full_name: "Carla Nogueira", avatar_url: null },
+    specialist_specialties: [
+      { specialties: { name_pt: "Layout de sala" } },
+      { specialties: { name_pt: "Visita técnica" } },
+    ],
+  },
+  {
+    id: "sp-diego",
+    user_id: "user-diego",
+    slug: "diego-londrina",
+    headline: "SOP e compliance no Norte do Paraná",
+    bio: "Atendimento híbrido com base em Londrina. Coordenadas públicas referem-se ao centro de atendimento, não a locais de cultivo.",
+    city: "Londrina",
+    state: "PR",
+    region: "Sul",
+    service_lat: -23.3045,
+    service_lng: -51.1696,
+    verification_status: "verified",
+    offers_remote: true,
+    offers_in_person: true,
+    users: { full_name: "Diego Prado", avatar_url: null },
+    specialist_specialties: [{ specialties: { name_pt: "Compliance" } }],
   },
 ] as const;
 
@@ -367,7 +413,7 @@ export const DEMO_STATS = {
   responseHours: 4.2,
 };
 
-export type DemoPersona = "specialist" | "grower" | "admin" | "both";
+export type DemoPersona = "specialist" | "grower" | "admin" | "both" | "google";
 
 export const DEMO_PERSONAS: Record<
   DemoPersona,
@@ -391,6 +437,7 @@ export const DEMO_PERSONAS: Record<
       onboardingComplete: true,
       specialistProfileId: "sp-ana",
       growerProfileId: null,
+      authProvider: "email",
     },
   },
   grower: {
@@ -406,6 +453,7 @@ export const DEMO_PERSONAS: Record<
       onboardingComplete: true,
       specialistProfileId: null,
       growerProfileId: "gp-carlos",
+      authProvider: "email",
     },
   },
   admin: {
@@ -421,6 +469,7 @@ export const DEMO_PERSONAS: Record<
       onboardingComplete: true,
       specialistProfileId: "sp-ana",
       growerProfileId: null,
+      authProvider: "email",
     },
   },
   both: {
@@ -436,6 +485,23 @@ export const DEMO_PERSONAS: Record<
       onboardingComplete: true,
       specialistProfileId: "sp-ana",
       growerProfileId: "gp-lia",
+      authProvider: "email",
+    },
+  },
+  google: {
+    label: "Google (demo)",
+    email: "google.user@demo.cwg",
+    password: "demo1234",
+    session: {
+      userId: "user-google",
+      email: "google.user@demo.cwg",
+      fullName: "Usuário Google Demo",
+      roles: ["grower"],
+      activeRole: "grower",
+      onboardingComplete: true,
+      specialistProfileId: null,
+      growerProfileId: "gp-google",
+      authProvider: "google",
     },
   },
 };
@@ -453,14 +519,42 @@ export function findDemoPersonaByEmail(
   return null;
 }
 
-export function exploreDemoSpecialists(opts?: { estado?: string; q?: string }) {
+export type ExploreDemoOpts = {
+  estado?: string;
+  cidade?: string;
+  q?: string;
+  /** `in_person` | `remote` | `all` (default all, but sorted preferring in-person when near). */
+  mode?: "in_person" | "remote" | "all";
+  origin?: { lat: number; lng: number } | null;
+};
+
+export function exploreDemoSpecialists(opts?: ExploreDemoOpts) {
   const q = (opts?.q ?? "").trim().toLowerCase();
   const estado = (opts?.estado ?? "").trim().toUpperCase();
-  return DEMO_SPECIALISTS.filter((row) => {
+  const cidade = (opts?.cidade ?? "").trim().toLowerCase();
+  const mode = opts?.mode ?? "all";
+
+  let rows = DEMO_SPECIALISTS.filter((row) => {
     if (estado && row.state !== estado) return false;
+    if (cidade && !row.city.toLowerCase().includes(cidade)) return false;
+    if (mode === "in_person" && !row.offers_in_person) return false;
+    if (mode === "remote" && !row.offers_remote) return false;
     if (!q) return true;
-    const hay = `${row.users.full_name} ${row.headline} ${row.slug} ${row.city}`.toLowerCase();
+    const hay =
+      `${row.users.full_name} ${row.headline} ${row.slug} ${row.city}`.toLowerCase();
     return hay.includes(q);
+  });
+
+  if (opts?.origin) {
+    return sortByDistance([...rows], opts.origin, { preferInPerson: true });
+  }
+
+  // Without location: still surface in-person first for directory default.
+  return [...rows].sort((a, b) => {
+    const aIn = a.offers_in_person ? 0 : 1;
+    const bIn = b.offers_in_person ? 0 : 1;
+    if (aIn !== bIn) return aIn - bIn;
+    return a.users.full_name.localeCompare(b.users.full_name, "pt-BR");
   });
 }
 

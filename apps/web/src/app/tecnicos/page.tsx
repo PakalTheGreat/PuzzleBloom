@@ -1,17 +1,50 @@
-import Link from "next/link";
 import { exploreSpecialists } from "@cwg/api";
-
-import { SiteHeader } from "@/components/SiteHeader";
 import { exploreDemoSpecialists } from "@cwg/demo";
+
+import { DirectoryClient } from "@/components/DirectoryClient";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
-type SearchParams = Promise<{ estado?: string; q?: string }>;
+type SearchParams = Promise<{
+  estado?: string;
+  cidade?: string;
+  q?: string;
+  mode?: string;
+  lat?: string;
+  lng?: string;
+}>;
+
+type DirectoryRow = {
+  id: string;
+  slug: string;
+  headline?: string | null;
+  city?: string | null;
+  state?: string | null;
+  verification_status?: string | null;
+  offers_in_person?: boolean | null;
+  offers_remote?: boolean | null;
+  service_lat?: number | null;
+  service_lng?: number | null;
+  users?: { full_name?: string } | null;
+  distance_km?: number | null;
+};
 
 export const metadata = {
   title: "Especialistas",
-  description: "Diretório público de especialistas técnicos CWG.",
+  description:
+    "Diretório público de especialistas técnicos CWG — presencial por proximidade.",
 };
+
+function preferInPerson(rows: DirectoryRow[]): DirectoryRow[] {
+  return [...rows].sort((a, b) => {
+    const aIn = a.offers_in_person ? 0 : 1;
+    const bIn = b.offers_in_person ? 0 : 1;
+    if (aIn !== bIn) return aIn - bIn;
+    return 0;
+  });
+}
 
 export default async function DirectoryPage({
   searchParams,
@@ -20,24 +53,32 @@ export default async function DirectoryPage({
 }) {
   const params = await searchParams;
   const { configured } = getPublicSupabaseEnv();
+  const mode =
+    params.mode === "in_person" || params.mode === "remote"
+      ? params.mode
+      : "all";
 
-  let rows: Array<Record<string, unknown>> = [];
+  let rows: DirectoryRow[] = [];
   let fetchError: string | null = null;
 
   if (!configured) {
     rows = exploreDemoSpecialists({
       estado: params.estado,
+      cidade: params.cidade,
       q: params.q,
-    }) as unknown as Array<Record<string, unknown>>;
+      mode,
+    }) as unknown as DirectoryRow[];
   } else {
     const client = await createClient();
     if (client) {
       const { data, error } = await exploreSpecialists(client, {
         state: params.estado,
+        city: params.cidade,
         q: params.q,
+        mode,
       });
       if (error) fetchError = error.message;
-      rows = (data as Array<Record<string, unknown>> | null) ?? [];
+      rows = preferInPerson((data as DirectoryRow[] | null) ?? []);
     }
   }
 
@@ -46,71 +87,25 @@ export default async function DirectoryPage({
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-6 py-12">
         <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--cwg-green-deep)]">
-          Especialistas
+          Especialistas perto de você
         </h1>
-        <p className="mt-2 text-sm text-[var(--cwg-text-secondary)]">
-          Diretório público — reputação e verificação vêm do banco, nunca de
-          assinatura.
-        </p>
-
-        <form className="mt-8 flex flex-wrap gap-3" method="get">
-          <input
-            name="q"
-            defaultValue={params.q ?? ""}
-            placeholder="Buscar"
-            className="rounded-[10px] border border-[var(--cwg-graphite-200)] bg-white px-3 py-2 text-sm"
-          />
-          <input
-            name="estado"
-            defaultValue={params.estado ?? ""}
-            placeholder="UF"
-            maxLength={2}
-            className="w-20 rounded-[10px] border border-[var(--cwg-graphite-200)] bg-white px-3 py-2 text-sm uppercase"
-          />
-          <button
-            type="submit"
-            className="rounded-[10px] bg-[var(--cwg-green)] px-4 py-2 text-sm font-semibold text-white"
-          >
-            Filtrar
-          </button>
-        </form>
-
         {fetchError ? (
           <p className="mt-8 text-sm text-red-700">{fetchError}</p>
-        ) : rows.length === 0 ? (
-          <p className="mt-8 text-sm text-[var(--cwg-text-secondary)]">
-            Nenhum especialista encontrado.
-          </p>
         ) : (
-          <ul className="mt-8 space-y-4">
-            {rows.map((row) => {
-              const users = row.users as { full_name?: string } | null;
-              const slug = String(row.slug);
-              return (
-                <li
-                  key={String(row.id)}
-                  className="border-b border-[var(--cwg-graphite-100)] pb-4"
-                >
-                  <Link
-                    href={`/tecnicos/${slug}`}
-                    className="font-semibold text-[var(--cwg-graphite-900)] hover:text-[var(--cwg-green)]"
-                  >
-                    {users?.full_name || slug}
-                  </Link>
-                  <p className="mt-1 text-sm text-[var(--cwg-text-secondary)]">
-                    {[row.headline, row.city, row.state]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                  <p className="mt-1 text-xs uppercase tracking-wide text-[var(--cwg-graphite-400)]">
-                    {String(row.verification_status)}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
+          <DirectoryClient
+            initialRows={rows}
+            initialQuery={{
+              q: params.q,
+              estado: params.estado,
+              cidade: params.cidade,
+              mode,
+              lat: params.lat,
+              lng: params.lng,
+            }}
+          />
         )}
       </main>
+      <SiteFooter />
     </>
   );
 }

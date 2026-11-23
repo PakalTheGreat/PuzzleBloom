@@ -63,6 +63,7 @@ Conventions:
 | bio | text | |
 | photo_url | text | |
 | city / state / region | text | |
+| service_lat / service_lng | double precision nullable | coarse **service-area** centroid for nearby sort — **never** cultivation street address |
 | offers_remote | boolean | |
 | offers_in_person | boolean | |
 | years_experience | int | validated in app |
@@ -71,7 +72,7 @@ Conventions:
 | last_active_at | timestamptz | discovery sort |
 | created_at / updated_at | timestamptz | |
 
-**Indexes:** `specialist_profiles (slug)`, `(state, city)`, `(verification_status)`, `(last_active_at desc)`.
+**Indexes:** `specialist_profiles (slug)`, `(state, city)`, `(verification_status)`, `(last_active_at desc)`, partial `(service_lat, service_lng)`.
 
 ### `organizations` / `organization_members`
 Legal orgs that growers may belong to. Members: `organization_id`, `user_id`, `member_role`, unique `(organization_id, user_id)`. No public cultivation site coordinates.
@@ -274,6 +275,8 @@ Payments deferred live processing; keep rows for webhook readiness. Events appen
 
 ### `terms_acceptances` / `privacy_consents`
 `user_id`, `document_version`, `accepted_at`, `ip` / `user_agent` metadata as policy allows.
+
+Pre-auth **cultivation authorization declaration** also uses `terms_acceptances` with `document_version = LEGAL_VERSIONS.cultivationAuthorization` (see `@cwg/shared`). This records user attestation only — it does **not** mean CWG validated any license or authorization.
 
 ### `age_confirmations`
 `user_id`, `confirmed_18_plus`, `confirmed_at` — recorded; not legal authorization to cultivate.

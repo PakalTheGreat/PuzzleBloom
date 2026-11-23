@@ -19,6 +19,20 @@ export async function signInWithEmail(client: CwgSupabase, input: SignInInput) {
   });
 }
 
+/** Google OAuth via Supabase Auth. Configure provider in Supabase dashboard. */
+export async function signInWithGoogle(
+  client: CwgSupabase,
+  opts: { redirectTo: string; queryParams?: Record<string, string> },
+) {
+  return client.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: opts.redirectTo,
+      queryParams: opts.queryParams,
+    },
+  });
+}
+
 export async function signOut(client: CwgSupabase) {
   return client.auth.signOut();
 }

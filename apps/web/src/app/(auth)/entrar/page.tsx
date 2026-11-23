@@ -7,7 +7,10 @@ import { signInSchema } from "@cwg/validation";
 import { signInWithEmail } from "@cwg/api";
 
 import { DEMO_PERSONAS, type DemoPersona } from "@cwg/demo";
+import { GoogleAuthButton } from "@/components/GoogleAuthButton";
+import { LegalAuthGate } from "@/components/LegalAuthGate";
 import { writeDemoSessionClient } from "@/lib/demo/client-session";
+import { cultivationAcceptanceForSession } from "@/lib/legal-auth";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
@@ -24,12 +27,23 @@ function LoginForm() {
   async function enterDemo(persona: DemoPersona) {
     setLoading(true);
     setError(null);
+    const base = { ...DEMO_PERSONAS[persona].session };
+    const session = {
+      ...base,
+      legalAcceptances: [
+        ...(base.legalAcceptances ?? []),
+        ...cultivationAcceptanceForSession(),
+      ],
+    };
     const res = await fetch("/api/demo/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ persona }),
+      body: JSON.stringify({ session }),
     });
-    const json = (await res.json()) as { error?: string; session?: (typeof DEMO_PERSONAS)[DemoPersona]["session"] };
+    const json = (await res.json()) as {
+      error?: string;
+      session?: (typeof DEMO_PERSONAS)[DemoPersona]["session"];
+    };
     setLoading(false);
     if (!res.ok || !json.session) {
       setError(json.error ?? "Falha no login demonstração");
@@ -60,7 +74,14 @@ function LoginForm() {
         setError(json.error ?? "Use ana@demo.cwg / demo1234 ou os atalhos abaixo.");
         return;
       }
-      writeDemoSessionClient(json.session);
+      const session = {
+        ...json.session,
+        legalAcceptances: [
+          ...(json.session.legalAcceptances ?? []),
+          ...cultivationAcceptanceForSession(),
+        ],
+      };
+      writeDemoSessionClient(session);
       router.push(next);
       router.refresh();
       return;
@@ -87,80 +108,96 @@ function LoginForm() {
     router.refresh();
   }
 
+  const personaKeys = (Object.keys(DEMO_PERSONAS) as DemoPersona[]).filter(
+    (k) => k !== "google",
+  );
+
   return (
-    <div>
-      <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--cwg-green-deep)]">
-        Entrar
-      </h1>
-      <p className="mt-2 text-sm text-[var(--cwg-text-secondary)]">
-        {configured
-          ? "Acesse sua conta CWG (e-mail e senha)."
-          : "Protótipo em modo demonstração — escolha um perfil ou use as contas demo."}
-      </p>
+    <LegalAuthGate>
+      <div>
+        <h1 className="font-[family-name:var(--font-fraunces)] text-3xl text-[var(--cwg-green-deep)]">
+          Entrar
+        </h1>
+        <p className="mt-2 text-sm text-[var(--cwg-text-secondary)]">
+          {configured
+            ? "Acesse sua conta CWG (e-mail, senha ou Google)."
+            : "Protótipo em modo demonstração — escolha um perfil, Google demo ou contas demo."}
+        </p>
 
-      {!configured ? (
-        <div className="mt-6 grid gap-2">
-          {(Object.keys(DEMO_PERSONAS) as DemoPersona[]).map((key) => (
-            <button
-              key={key}
-              type="button"
-              disabled={loading}
-              onClick={() => void enterDemo(key)}
-              className="rounded-[10px] border border-[var(--cwg-graphite-200)] bg-white px-4 py-3 text-left text-sm hover:border-[var(--cwg-green)] disabled:opacity-60"
-            >
-              <div className="font-semibold text-[var(--cwg-graphite-900)]">
-                {DEMO_PERSONAS[key].label}
-              </div>
-              <div className="text-[var(--cwg-text-secondary)]">
-                {DEMO_PERSONAS[key].email}
-              </div>
-            </button>
-          ))}
+        <div className="mt-6">
+          <GoogleAuthButton mode="signin" />
         </div>
-      ) : null}
 
-      <form onSubmit={onSubmit} className="mt-8 space-y-4">
-        <label className="block text-sm">
-          <span className="text-[var(--cwg-text-secondary)]">E-mail</span>
-          <input
-            type="email"
-            autoComplete="email"
-            className="mt-1 w-full rounded-[10px] border border-[var(--cwg-graphite-200)] bg-white px-3 py-2"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={!configured ? "ana@demo.cwg" : undefined}
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="text-[var(--cwg-text-secondary)]">Senha</span>
-          <input
-            type="password"
-            autoComplete="current-password"
-            className="mt-1 w-full rounded-[10px] border border-[var(--cwg-graphite-200)] bg-white px-3 py-2"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={!configured ? "demo1234" : undefined}
-          />
-        </label>
-        {error ? <p className="text-sm text-red-700">{error}</p> : null}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-[10px] bg-[var(--cwg-green)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--cwg-green-deep)] disabled:opacity-60"
-        >
-          {loading ? "Entrando…" : "Entrar"}
-        </button>
-      </form>
-      <p className="mt-6 text-sm text-[var(--cwg-text-secondary)]">
-        <Link href="/recuperar" className="text-[var(--cwg-green)] hover:underline">
-          Esqueci a senha
-        </Link>
-        {" · "}
-        <Link href="/cadastrar" className="text-[var(--cwg-green)] hover:underline">
-          Criar conta
-        </Link>
-      </p>
-    </div>
+        <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-wide text-[var(--cwg-graphite-400)]">
+          <span className="h-px flex-1 bg-[var(--cwg-graphite-200)]" />
+          ou
+          <span className="h-px flex-1 bg-[var(--cwg-graphite-200)]" />
+        </div>
+
+        {!configured ? (
+          <div className="grid gap-2">
+            {personaKeys.map((key) => (
+              <button
+                key={key}
+                type="button"
+                disabled={loading}
+                onClick={() => void enterDemo(key)}
+                className="rounded-[10px] border border-[var(--cwg-graphite-200)] bg-white px-4 py-3 text-left text-sm hover:border-[var(--cwg-green)] disabled:opacity-60"
+              >
+                <div className="font-semibold text-[var(--cwg-graphite-900)]">
+                  {DEMO_PERSONAS[key].label}
+                </div>
+                <div className="text-[var(--cwg-text-secondary)]">
+                  {DEMO_PERSONAS[key].email}
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        <form onSubmit={onSubmit} className="mt-8 space-y-4">
+          <label className="block text-sm">
+            <span className="text-[var(--cwg-text-secondary)]">E-mail</span>
+            <input
+              type="email"
+              autoComplete="email"
+              className="mt-1 w-full rounded-[10px] border border-[var(--cwg-graphite-200)] bg-white px-3 py-2"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={!configured ? "ana@demo.cwg" : undefined}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="text-[var(--cwg-text-secondary)]">Senha</span>
+            <input
+              type="password"
+              autoComplete="current-password"
+              className="mt-1 w-full rounded-[10px] border border-[var(--cwg-graphite-200)] bg-white px-3 py-2"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={!configured ? "demo1234" : undefined}
+            />
+          </label>
+          {error ? <p className="text-sm text-red-700">{error}</p> : null}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-[10px] bg-[var(--cwg-green)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--cwg-green-deep)] disabled:opacity-60"
+          >
+            {loading ? "Entrando…" : "Entrar"}
+          </button>
+        </form>
+        <p className="mt-6 text-sm text-[var(--cwg-text-secondary)]">
+          <Link href="/recuperar" className="text-[var(--cwg-green)] hover:underline">
+            Esqueci a senha
+          </Link>
+          {" · "}
+          <Link href="/cadastrar" className="text-[var(--cwg-green)] hover:underline">
+            Criar conta
+          </Link>
+        </p>
+      </div>
+    </LegalAuthGate>
   );
 }
 

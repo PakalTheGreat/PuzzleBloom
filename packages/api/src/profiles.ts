@@ -115,6 +115,31 @@ export async function recordLegalAndAge(
   return { age, terms, privacy };
 }
 
+/**
+ * Records pre-auth cultivation-authorization declaration into `terms_acceptances`
+ * using LEGAL_VERSIONS.cultivationAuthorization as document_version.
+ * Does not assert the platform validated any license.
+ */
+export async function recordCultivationAuthorization(
+  client: CwgSupabase,
+  userId: string,
+  meta?: { ip?: string; user_agent?: string },
+) {
+  const existing = await client
+    .from("terms_acceptances")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("document_version", LEGAL_VERSIONS.cultivationAuthorization)
+    .maybeSingle();
+  if (existing.data?.id) return existing;
+  return client.from("terms_acceptances").insert({
+    user_id: userId,
+    document_version: LEGAL_VERSIONS.cultivationAuthorization,
+    ip: meta?.ip ?? null,
+    user_agent: meta?.user_agent ?? null,
+  });
+}
+
 function rolesFromIntent(intent: RoleIntent): ActiveRole[] {
   if (intent === "find") return ["grower"];
   if (intent === "offer") return ["specialist"];
@@ -252,20 +277,27 @@ export async function listSpecialties(client: CwgSupabase) {
 
 export async function exploreSpecialists(
   client: CwgSupabase,
-  filters?: { state?: string; city?: string; q?: string },
+  filters?: {
+    state?: string;
+    city?: string;
+    q?: string;
+    mode?: "in_person" | "remote" | "all";
+  },
 ) {
   let query = client
     .from("specialist_profiles")
     .select(
       `id, slug, headline, city, state, region, offers_remote, offers_in_person,
-       years_experience, verification_status, photo_url, last_active_at,
-       users!inner(full_name)`,
+       service_lat, service_lng, years_experience, verification_status, photo_url,
+       last_active_at, users!inner(full_name)`,
     )
     .order("last_active_at", { ascending: false, nullsFirst: false })
     .limit(40);
 
   if (filters?.state) query = query.eq("state", filters.state);
   if (filters?.city) query = query.ilike("city", `%${filters.city}%`);
+  if (filters?.mode === "in_person") query = query.eq("offers_in_person", true);
+  if (filters?.mode === "remote") query = query.eq("offers_remote", true);
   if (filters?.q) query = query.or(`headline.ilike.%${filters.q}%,bio.ilike.%${filters.q}%`);
 
   return query;
