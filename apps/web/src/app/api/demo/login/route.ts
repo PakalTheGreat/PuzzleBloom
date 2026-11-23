@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-
-import { DEMO_PERSONAS, findDemoPersonaByEmail } from "@/lib/demo/data";
 import {
-  demoCookieOptions,
-  encodeDemoSession,
-} from "@/lib/demo/session";
-import type { DemoPersona } from "@/lib/demo/data";
-import type { DemoSession } from "@/lib/demo/types";
-import { DEMO_COOKIE } from "@/lib/demo/types";
+  DEMO_COOKIE,
+  DEMO_PERSONAS,
+  findDemoPersonaByEmail,
+  type DemoPersona,
+  type DemoSession,
+} from "@cwg/demo";
+
+import { demoCookieOptions, encodeDemoSession } from "@/lib/demo/session";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
 export async function POST(request: Request) {

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { writeDemoSessionClient } from "@/lib/demo/client-session";
-import type { AppRole, DemoSession } from "@/lib/demo/types";
+import type { AppRole, DemoSession } from "@cwg/demo";
 
 export function RoleSwitcher({
   roles,

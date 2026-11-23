@@ -6,7 +6,7 @@ import { createCrmClient, listCrmClients } from "@cwg/api";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { readDemoSessionClient } from "@/lib/demo/client-session";
-import { DEMO_CRM_CLIENTS } from "@/lib/demo/data";
+import { DEMO_CRM_CLIENTS } from "@cwg/demo";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { getMySpecialistProfileId } from "@/lib/specialist";

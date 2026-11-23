@@ -7,7 +7,7 @@ import { signUpSchema } from "@cwg/validation";
 import { signUpWithEmail } from "@cwg/api";
 
 import { writeDemoSessionClient } from "@/lib/demo/client-session";
-import type { DemoSession } from "@/lib/demo/types";
+import type { DemoSession } from "@cwg/demo";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 

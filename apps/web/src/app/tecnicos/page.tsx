@@ -2,7 +2,7 @@ import Link from "next/link";
 import { exploreSpecialists } from "@cwg/api";
 
 import { SiteHeader } from "@/components/SiteHeader";
-import { exploreDemoSpecialists } from "@/lib/demo/data";
+import { exploreDemoSpecialists } from "@cwg/demo";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 

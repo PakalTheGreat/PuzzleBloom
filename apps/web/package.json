@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@cwg/api": "workspace:*",
+    "@cwg/demo": "workspace:*",
     "@cwg/shared": "workspace:*",
     "@cwg/types": "workspace:*",
     "@cwg/ui": "workspace:*",

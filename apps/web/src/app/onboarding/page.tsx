@@ -12,7 +12,7 @@ import {
   readDemoSessionClient,
   writeDemoSessionClient,
 } from "@/lib/demo/client-session";
-import type { AppRole, DemoSession } from "@/lib/demo/types";
+import type { AppRole, DemoSession } from "@cwg/demo";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { isFavorite, toggleFavorite } from "@cwg/api";
 
 import { readDemoSessionClient } from "@/lib/demo/client-session";
-import { DEMO_FAVORITES } from "@/lib/demo/data";
+import { DEMO_FAVORITES } from "@cwg/demo";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 

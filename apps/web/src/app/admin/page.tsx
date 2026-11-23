@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { readDemoSessionClient } from "@/lib/demo/client-session";
-import { DEMO_ADMIN_PENDING, DEMO_ADMIN_REPORTS } from "@/lib/demo/data";
+import { DEMO_ADMIN_PENDING, DEMO_ADMIN_REPORTS } from "@cwg/demo";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 

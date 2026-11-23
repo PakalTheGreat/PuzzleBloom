@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { readDemoSessionClient } from "@/lib/demo/client-session";
-import { DEMO_STATS } from "@/lib/demo/data";
+import { DEMO_STATS } from "@cwg/demo";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
 export default function EstatisticasPage() {

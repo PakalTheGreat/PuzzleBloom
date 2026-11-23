@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { readDemoSessionClient } from "@/lib/demo/client-session";
-import type { DemoSession } from "@/lib/demo/types";
+import type { DemoSession } from "@cwg/demo";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
 export function SiteHeader() {

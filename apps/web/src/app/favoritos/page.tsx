@@ -6,7 +6,7 @@ import { listFavorites, toggleFavorite } from "@cwg/api";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { readDemoSessionClient } from "@/lib/demo/client-session";
-import { DEMO_FAVORITES } from "@/lib/demo/data";
+import { DEMO_FAVORITES } from "@cwg/demo";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 

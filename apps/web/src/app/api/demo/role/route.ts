@@ -5,8 +5,8 @@ import {
   demoCookieOptions,
   encodeDemoSession,
 } from "@/lib/demo/session";
-import type { AppRole } from "@/lib/demo/types";
-import { DEMO_COOKIE } from "@/lib/demo/types";
+import type { AppRole } from "@cwg/demo";
+import { DEMO_COOKIE } from "@cwg/demo";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
 export async function POST(request: Request) {

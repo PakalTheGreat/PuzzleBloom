@@ -18,7 +18,7 @@ import {
   DEMO_APPOINTMENTS,
   DEMO_AVAILABILITY_RULES,
   DEMO_EXCEPTIONS,
-} from "@/lib/demo/data";
+} from "@cwg/demo";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { getMySpecialistProfileId } from "@/lib/specialist";

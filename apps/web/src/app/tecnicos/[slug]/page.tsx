@@ -4,7 +4,7 @@ import { getSpecialistBySlug } from "@cwg/api";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { RequestServiceButton } from "@/components/RequestServiceButton";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getDemoSpecialistBySlug } from "@/lib/demo/data";
+import { getDemoSpecialistBySlug } from "@cwg/demo";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 

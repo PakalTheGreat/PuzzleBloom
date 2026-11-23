@@ -4,7 +4,7 @@ import { fetchMe } from "@cwg/api";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { getAppSession, isDemoMode } from "@/lib/auth";
-import type { AppRole } from "@/lib/demo/types";
+import type { AppRole } from "@cwg/demo";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./SignOutButton";
 import { RoleSwitcher } from "./RoleSwitcher";

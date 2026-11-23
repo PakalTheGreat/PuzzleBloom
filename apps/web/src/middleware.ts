@@ -1,8 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { decodeDemoSession } from "@/lib/demo/codec";
-import { DEMO_COOKIE } from "@/lib/demo/types";
+import { DEMO_COOKIE, decodeDemoSession } from "@cwg/demo";
 
 const SPECIALIST_PREFIXES = [
   "/crm",

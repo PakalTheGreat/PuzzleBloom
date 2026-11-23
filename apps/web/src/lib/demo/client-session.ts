@@ -1,6 +1,9 @@
-import { decodeDemoSession, encodeDemoSession } from "./codec";
-import type { DemoSession } from "./types";
-import { DEMO_COOKIE } from "./types";
+import {
+  DEMO_COOKIE,
+  decodeDemoSession,
+  encodeDemoSession,
+  type DemoSession,
+} from "@cwg/demo";
 
 export function readDemoSessionClient(): DemoSession | null {
   if (typeof document === "undefined") return null;

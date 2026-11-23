@@ -108,6 +108,9 @@ importers:
       '@cwg/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@cwg/demo':
+        specifier: workspace:*
+        version: link:../../packages/demo
       '@cwg/shared':
         specifier: workspace:*
         version: link:../../packages/shared

@@ -7,7 +7,7 @@ import { listMessages, sendMessage } from "@cwg/api";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { readDemoSessionClient } from "@/lib/demo/client-session";
-import { DEMO_MESSAGES } from "@/lib/demo/data";
+import { DEMO_MESSAGES } from "@cwg/demo";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 

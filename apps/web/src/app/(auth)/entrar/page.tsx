@@ -6,7 +6,7 @@ import { Suspense, useState } from "react";
 import { signInSchema } from "@cwg/validation";
 import { signInWithEmail } from "@cwg/api";
 
-import { DEMO_PERSONAS, type DemoPersona } from "@/lib/demo/data";
+import { DEMO_PERSONAS, type DemoPersona } from "@cwg/demo";
 import { writeDemoSessionClient } from "@/lib/demo/client-session";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";

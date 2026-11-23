@@ -11,7 +11,7 @@ import {
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { readDemoSessionClient } from "@/lib/demo/client-session";
-import { DEMO_REQUESTS } from "@/lib/demo/data";
+import { DEMO_REQUESTS } from "@cwg/demo";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { getMySpecialistProfileId } from "@/lib/specialist";

@@ -1,10 +1,12 @@
 import { cookies } from "next/headers";
+import {
+  DEMO_COOKIE,
+  decodeDemoSession,
+  encodeDemoSession,
+  type DemoSession,
+} from "@cwg/demo";
 
-import { decodeDemoSession, encodeDemoSession } from "./codec";
-import type { DemoSession } from "./types";
-import { DEMO_COOKIE } from "./types";
-
-export { decodeDemoSession, encodeDemoSession } from "./codec";
+export { decodeDemoSession, encodeDemoSession, DEMO_COOKIE } from "@cwg/demo";
 
 export async function getDemoSessionServer(): Promise<DemoSession | null> {
   const store = await cookies();

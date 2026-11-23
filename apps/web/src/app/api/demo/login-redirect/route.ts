@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { DEMO_PERSONAS, type DemoPersona } from "@/lib/demo/data";
+import { DEMO_PERSONAS, type DemoPersona } from "@cwg/demo";
 import { demoCookieOptions, encodeDemoSession } from "@/lib/demo/session";
-import { DEMO_COOKIE } from "@/lib/demo/types";
+import { DEMO_COOKIE } from "@cwg/demo";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
 export async function GET(request: NextRequest) {

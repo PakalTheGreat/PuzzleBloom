@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { DEMO_COOKIE } from "@/lib/demo/types";
+import { DEMO_COOKIE } from "@cwg/demo";
 
 export async function POST() {
   const res = NextResponse.json({ ok: true });

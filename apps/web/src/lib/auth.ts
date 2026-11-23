@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getPublicSupabaseEnv } from "@/lib/env";
 import { readDemoSessionClient } from "@/lib/demo/client-session";
 import { getDemoSessionServer } from "@/lib/demo/session";
-import type { AppRole, DemoSession } from "@/lib/demo/types";
+import type { AppRole, DemoSession } from "@cwg/demo";
 import { createClient } from "@/lib/supabase/server";
 
 export type AppSession = DemoSession & {

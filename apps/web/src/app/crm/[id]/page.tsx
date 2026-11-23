@@ -20,7 +20,7 @@ import {
   DEMO_CRM_CLIENTS,
   DEMO_CRM_NOTES,
   DEMO_CRM_TASKS,
-} from "@/lib/demo/data";
+} from "@cwg/demo";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicSupabaseEnv } from "@/lib/env";
 
